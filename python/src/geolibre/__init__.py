@@ -10,14 +10,25 @@ from .authoring import (
     save_project,
 )
 from .geolibre import Feature, Layer, Map
+from .dash_component import DashMap
 from .legends import builtin_legend_names
 from .polyline import decode_polyline, encode_polyline, polyline_to_geojson, unescape_polyline
+
+# Dash discovers component bundles from these package-level distribution
+# declarations. Keeping Dash optional means importing the normal Jupyter API
+# does not require Dash to be installed.
+_js_dist = [{
+    "relative_package_path": "static/dash/geolibre.js",
+    "namespace": "geolibre",
+}]
+_css_dist: list[dict[str, str]] = []
 
 __version__ = "2.8.0"
 __all__ = [
     "Feature",
     "Layer",
     "Map",
+    "DashMap",
     "__version__",
     "basemap_catalog",
     "builtin_legend_names",
