@@ -1,12 +1,11 @@
 import { useAppStore } from "@geolibre/core";
 import { Agent } from "@strands-agents/sdk";
+import { configForProvider, createModel, resolveProviderConfig } from "./provider";
 import {
-  configForProvider,
-  createModel,
-  resolveProviderConfig,
-  type AssistantProviderId,
-} from "./provider";
-import { configForProfile } from "./profiles";
+  assistantSelectionKey,
+  configForProfile,
+  type AssistantProviderSelection,
+} from "./profiles";
 import type { AssistantProfile } from "./provider";
 import { createAssistantTools, describeLayers, type AssistantToolDeps } from "./tools";
 
@@ -18,7 +17,7 @@ Guidelines:
 - Call list_layers to discover the current layers, their attribute fields, and the SQL table names before referencing them.
 - For data questions, prefer run_sql with a single read-only DuckDB Spatial SQL statement against the SQL table names from list_layers. Show the SQL you ran. Only add the result as a layer when the user asks to map it or when geometry is clearly wanted.
 - For styling requests, use apply_symbology with the layer's real field names.
-- For vector geoprocessing (buffer, clip, dissolve, intersection, difference, union, spatial join, simplify, centroids, H3 grids, …), call list_algorithms to discover ids and typed parameters, then run_algorithm with the algorithm id and parameters. A 'layer' parameter takes a layer id. Build a multi-step pipeline by feeding one run's returned result layer id into the next.
+- For vector geoprocessing (buffer, clip, dissolve, intersection, difference, union, spatial join, simplify, centroids, DGGS/H3 grids, …), call list_algorithms to discover ids and typed parameters, then run_algorithm with the algorithm id and parameters. H3, S2, A5, DGGRID and DGGAL grids all come from dggs-grid / dggs-bin via their dggsType parameter, and dggs-compact compacts or expands an existing cell layer for H3, S2, A5 and DGGAL but not DGGRID; there is no separate h3-grid id. A 'layer' parameter takes a layer id. Build a multi-step pipeline by feeding one run's returned result layer id into the next.
 - For raster work (hydrology, terrain, LiDAR, image processing, raster↔vector conversion), the vector algorithms do not apply: call list_whitebox_tools with a \`search\` keyword to find the tool and its exact parameter names, then run_whitebox_tool. A raster/vector input parameter takes a layer id. Never tell the user a raster operation is unavailable without searching this catalog first. When a workflow needs depression filling, use fill_depressions_wang_and_liu rather than the plain fill_depressions tool.
 - When the user asks to create, design, or build a reusable Model Builder model, do not execute the pipeline immediately. Call list_model_algorithms, then create_model_builder_model to save a validated editable graph and open it for review.
 - To add satellite/aerial imagery or other earth-observation data, use search_stac and add_stac_layer against the Planetary Computer (collections such as sentinel-2-l2a, landsat-c2-l2, naip, cop-dem-glo-30); the bounding box defaults to the current view.
@@ -43,7 +42,7 @@ export type AssistantStreamEvent =
 export class AssistantSession {
   private agent: Agent | null = null;
   /** Explicit provider/model chosen in the UI; null means auto-resolve. */
-  private selection: { provider: AssistantProviderId; model?: string } | null = null;
+  private selection: AssistantProviderSelection | null = null;
   /**
    * When set, the user chose a named profile from Settings → AI Providers.
    * The profile's own credential fieldValues are used directly rather than
@@ -53,6 +52,12 @@ export class AssistantSession {
   private profile: AssistantProfile | null = null;
   /** Last layer context sent, so it is only re-sent when it actually changes. */
   private lastContext: string | null = null;
+  /**
+   * Value identity of the currently applied selection, so re-applying an
+   * equivalent one is a no-op. Starts as the key for `null` (auto-resolve),
+   * matching the initial `selection`/`profile` state above.
+   */
+  private selectionKey: string = assistantSelectionKey(null);
 
   constructor(private readonly deps: AssistantToolDeps) {}
 
@@ -65,18 +70,26 @@ export class AssistantSession {
    * Pin the provider/model (from the legacy UI picker) or pass a full
    * {@link AssistantProfile} for profile-based credential resolution.
    * Pass null to auto-resolve from the configured keys. Rebuilds the agent
-   * on the next prompt.
+   * on the next prompt, but only when the selection actually changed.
+   *
+   * Re-applying an equivalent selection must stay a no-op: callers re-run this
+   * whenever their inputs are recomputed, and resetting there would discard the
+   * conversation history this session exists to keep across {@link stream}
+   * calls. Equivalence is by value, not object identity, so a profile object
+   * rebuilt with the same provider, model, and credentials still matches.
    */
-  setSelection(
-    selection: { provider: AssistantProviderId; model?: string } | AssistantProfile | null,
-  ): void {
+  setSelection(selection: AssistantProviderSelection | AssistantProfile | null): void {
+    const key = assistantSelectionKey(selection);
+    if (key === this.selectionKey) return;
+    this.selectionKey = key;
+
     if (selection && "fieldValues" in selection) {
       // Profile-based: store the full profile, clear the legacy selection.
       this.profile = selection;
       this.selection = null;
     } else {
       // Legacy provider+model pair, or null for auto-resolve.
-      this.selection = selection as { provider: AssistantProviderId; model?: string } | null;
+      this.selection = selection as AssistantProviderSelection | null;
       this.profile = null;
     }
     this.reset();

@@ -57,8 +57,6 @@ export {
   type CompositeScoreResult,
 } from "./statistics-tools";
 export {
-  H3_TOOLS,
-  getH3Tool,
   buildBinSql,
   buildGridFromBboxSql,
   buildH3CompactSql,
@@ -184,8 +182,10 @@ export {
   type FocalStatistic,
 } from "./raster-client";
 export {
+  LOCAL_SIDECAR_URL,
   checkSidecarHealth,
   setSidecarAuthToken,
+  setSidecarFetch,
   clearRemoteWhiteboxCatalogSnapshotCache,
   fetchConversionJob,
   fetchConversionStatus,
