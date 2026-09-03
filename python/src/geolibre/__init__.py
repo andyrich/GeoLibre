@@ -11,7 +11,6 @@ from .authoring import (
 )
 from .dash_component import DashMap
 from .geolibre import Feature, Layer, Map
-from .dash_component import DashMap
 from .legends import builtin_legend_names
 from .polyline import decode_polyline, encode_polyline, polyline_to_geojson, unescape_polyline
 

@@ -17,9 +17,22 @@ except ImportError:  # pragma: no cover - Dash is an optional dependency
 
 
 _PROPERTIES = [
-    "id", "className", "style", "center", "zoom", "basemap", "height",
-    "layout", "theme", "clickData", "selectionData", "viewData",
-    "project", "appUrl", "appPort", "setProps",
+    "id",
+    "className",
+    "style",
+    "center",
+    "zoom",
+    "basemap",
+    "height",
+    "layout",
+    "theme",
+    "clickData",
+    "selectionData",
+    "viewData",
+    "project",
+    "appUrl",
+    "appPort",
+    "setProps",
 ]
 
 
@@ -35,10 +48,12 @@ if Component is not None:
         _namespace = "geolibre"
         _type = "DashMap"
         _prop_names = _PROPERTIES
-        _js_dist = [{
-            "relative_package_path": "static/dash/geolibre.js",
-            "namespace": "geolibre",
-        }]
+        _js_dist = [
+            {
+                "relative_package_path": "static/dash/geolibre.js",
+                "namespace": "geolibre",
+            }
+        ]
         _css_dist: list[dict[str, Any]] = []
         _children_props: list[str] = []
         _base_nodes: set[str] = set()
