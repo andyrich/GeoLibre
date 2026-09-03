@@ -14,6 +14,7 @@ import ReactDOM from "react-dom/client";
 import "@fontsource-variable/ibm-plex-sans/wght.css";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/700.css";
+import "@geolibre/plugins/maplibre-vantor/style.css";
 import "@geoman-io/maplibre-geoman-free/dist/maplibre-geoman.css";
 import "@maplibre/maplibre-gl-directions/dist/style.css";
 import "maplibre-gl-3d-tiles/style.css";
@@ -65,6 +66,7 @@ import "./lib/auth-return-url-boot";
 import i18n, { AVAILABLE_LANGUAGES, i18nReady, setActiveLanguage } from "./i18n";
 import { startAnalytics } from "./lib/analytics";
 import { installDiagnosticsCapture } from "./lib/diagnostics";
+import { isWindows } from "./lib/is-mobile";
 import { isTauri } from "./lib/is-tauri";
 import { installStaleChunkReload } from "./lib/stale-chunk-reload";
 import { resolveAuthGate, type AuthGateConfig } from "./lib/auth-gate";
@@ -75,14 +77,33 @@ import {
   fetchDesktopSettings,
   sharedSettingsLanguage,
 } from "./lib/desktop-settings-url";
+import { parseDeploymentCapabilities, useAppStore } from "@geolibre/core";
+import { readDeploymentEnvValue } from "./lib/deployment-env";
+import { initializeNativeProjectOpen } from "./lib/native-project-open";
 
 installDiagnosticsCapture();
+const nativeProjectOpenReady = initializeNativeProjectOpen();
+let nativeSidecarFetchReady: Promise<void> = Promise.resolve();
 // In the desktop build, route geocoding (place search / reverse geocode)
 // through Tauri's native HTTP client so it bypasses WebView CORS: public
 // Nominatim's CDN intermittently omits the CORS header on cached responses,
 // which the WebView rejects as "Search failed. Try again." Lazy + desktop-only
 // so the web/embedded bundles never import the Tauri HTTP plugin.
 if (isTauri()) {
+  // WebView2 can apply browser CORS and Local Network Access restrictions to
+  // the loopback processing server. Route those requests through Tauri's
+  // scoped native client so Windows uses the same reliable path as the shell
+  // that launched the server. Windows-only: the macOS and Linux webviews reach
+  // the sidecar directly, and the native client serializes request bodies over
+  // IPC, which would tax large uploads (ML segmentation) on platforms that were
+  // never broken.
+  if (isWindows()) {
+    nativeSidecarFetchReady = import("./lib/sidecar-fetch")
+      .then(({ installNativeSidecarFetch }) => installNativeSidecarFetch())
+      .catch((error: unknown) => {
+        console.error("[GeoLibre] Failed to install native sidecar fetch", error);
+      });
+  }
   void import("./lib/geocoding-fetch")
     .then(({ installNativeGeocodingFetch }) => installNativeGeocodingFetch())
     .catch((error: unknown) => {
@@ -115,6 +136,20 @@ if (isTauri()) {
 // Recover from chunks orphaned by a web redeploy (stale lazy import → 404). A
 // no-op in the desktop build, whose chunks are bundled locally.
 installStaleChunkReload();
+
+// What this deployment is allowed to do (issue #1673). Read once, before the
+// app renders, so no surface ever paints with the full grant and then retracts
+// it. Comes from the deployment/build env only — never from a URL parameter or
+// a project file — because a capability a visitor can hand themselves is not a
+// restriction. An absent value keeps the default full grant, so existing
+// deployments are unchanged.
+const configuredCapabilities = readDeploymentEnvValue("VITE_GEOLIBRE_CAPABILITIES");
+if (configuredCapabilities) {
+  useAppStore
+    .getState()
+    .setDeploymentCapabilities(parseDeploymentCapabilities(configuredCapabilities));
+}
+
 // "Web app" here means the *build*, never anything the visitor controls: the
 // desktop shell and the Jupyter embed wheel are compiled without the gate, but a
 // hosted deployment gates every request. In particular this must NOT consult
@@ -242,6 +277,12 @@ void Promise.all([
   import("./App"),
   import("./components/common/error-boundaries"),
   loadAuthGate(authGate),
+  // Sidecar-dependent panels can issue a request as soon as App mounts. On
+  // Windows, wait until those requests have the native transport installed.
+  nativeSidecarFetchReady,
+  // Capture a file-association or command-line project path before App decides
+  // whether to restore a configured startup project or the default workspace.
+  nativeProjectOpenReady,
   // Gate the first render on i18next being initialized with the active locale's
   // (lazily loaded) catalog, so the UI never paints raw translation keys.
   startupLanguageReady,

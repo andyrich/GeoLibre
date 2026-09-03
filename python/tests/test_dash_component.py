@@ -17,7 +17,7 @@ def test_dash_bundle_is_packaged():
 
 def test_dashmap_requires_dash_or_has_component():
     if dmod.Component is None:
-        with pytest.raises(ImportError, match="geolibre\[dash\]"):
+        with pytest.raises(ImportError, match=r"geolibre\[dash\]"):
             dmod.DashMap()
     else:
         assert dmod.DashMap._namespace == "geolibre"
