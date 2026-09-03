@@ -427,6 +427,27 @@ export {
 } from "./plugins/geo-editor-view-import";
 export { maplibreGeoAgentPlugin, GEOAGENT_PLUGIN_ID } from "./plugins/maplibre-geoagent";
 export { maplibreUsgsLidarPlugin } from "./plugins/maplibre-usgs-lidar";
+export {
+  buildBasinUrl,
+  buildFlowtraceBody,
+  buildHydrolocationUrl,
+  buildNavigationSourceUrl,
+  buildNavigationUrl,
+  maplibreUsgsNldiPlugin,
+  parseFlowtraceResponse,
+  NLDI_API,
+  USGS_NLDI_PLUGIN_ID,
+  type NldiDirection,
+  type NldiTraceResult,
+} from "./plugins/maplibre-usgs-nldi";
+export {
+  buildDischargeUrl,
+  maplibreUsgsDischargePlugin,
+  parseDischargeFeatures,
+  USGS_DISCHARGE_PLUGIN_ID,
+  type UsgsDischargeLabelMode,
+  type UsgsDischargeObservation,
+} from "./plugins/maplibre-usgs-discharge";
 export { maplibreNasaEarthdataPlugin } from "./plugins/maplibre-nasa-earthdata";
 export {
   DEFAULT_EARTHDATA_GIS_LABELS,
