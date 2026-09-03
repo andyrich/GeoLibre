@@ -14,6 +14,7 @@ const BASIN_LINE = "usgs-nldi-basin-line";
 const POINT_SOURCE = "usgs-nldi-point-source";
 const POINT_LAYER = "usgs-nldi-point";
 const PANEL = "usgs-nldi-panel";
+const REQUEST_TIMEOUT_MS = 30_000;
 
 export type NldiDirection = "none" | "up" | "down";
 
@@ -114,13 +115,23 @@ function parseNavigationSources(data: unknown): Record<string, string> {
 }
 
 async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
-  const response = await fetch(url, init);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const inheritedSignal = init?.signal;
+  const abort = () => controller.abort();
+  inheritedSignal?.addEventListener("abort", abort, { once: true });
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal });
   if (!response.ok) {
     let detail = "";
     try { detail = String((await response.json() as { description?: unknown }).description ?? ""); } catch { /* non-JSON error */ }
     throw new Error(`USGS NLDI returned HTTP ${response.status}${detail ? `: ${detail}` : ""}`);
   }
   return response.json();
+  } finally {
+    clearTimeout(timer);
+    inheritedSignal?.removeEventListener("abort", abort);
+  }
 }
 
 function pointFromHydrolocation(data: unknown): { point?: Point; comid?: string } {
@@ -133,11 +144,12 @@ function pointFromHydrolocation(data: unknown): { point?: Point; comid?: string 
   };
 }
 
-async function fallbackTrace(lon: number, lat: number, direction: NldiDirection): Promise<{ trace: NldiTraceResult; usedFallback: boolean }> {
-  const hydrolocation = await fetchJson(buildHydrolocationUrl(lon, lat));
+async function fallbackTrace(lon: number, lat: number, direction: NldiDirection, signal?: AbortSignal): Promise<{ trace: NldiTraceResult; usedFallback: boolean }> {
+  if (direction !== "none") throw new Error("Directional flowtrace is unavailable while the USGS process is offline. Choose Complete flowline or try again later.");
+  const hydrolocation = await fetchJson(buildHydrolocationUrl(lon, lat), { signal });
   const resolved = pointFromHydrolocation(hydrolocation);
   if (!resolved.comid) throw new Error("NLDI could not find a flowline near this point.");
-  const flowline = asCollection(await fetchJson(`${NLDI_API}/linked-data/comid/${encodeURIComponent(resolved.comid)}?f=json`));
+  const flowline = asCollection(await fetchJson(`${NLDI_API}/linked-data/comid/${encodeURIComponent(resolved.comid)}?f=json`, { signal }));
   const raindropPath = resolved.point
     ? { type: "FeatureCollection", features: [{ type: "Feature", geometry: { type: "LineString", coordinates: [[lon, lat], resolved.point.coordinates] }, properties: {} }] } as FeatureCollection
     : emptyCollection();
@@ -267,6 +279,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     const plottedNavigation: PlottedNavigationLayer[] = [];
     let disposed = false;
     let requestId = 0;
+    let activeAbortController: AbortController | null = null;
     const direction = document.createElement("select");
     direction.append(new Option("Complete flowline — returns the full NHD reach", "none"), new Option("Upstream only — returns the reach above the point", "up"), new Option("Downstream only — returns the reach below the point", "down"));
     direction.style.cssText = "padding:6px;border:1px solid hsl(var(--border));border-radius:5px;background:transparent;color:inherit;";
@@ -290,6 +303,36 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     const clearButton = button("Clear NLDI result");
     let navigationSources: Record<string, string> = {};
     let loadedNavigation = "";
+    const clearPlottedNavigation = () => {
+      plottedNavigation.splice(0).forEach((plotted) => {
+        plotted.removeHover();
+        plotted.layerIds.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); });
+        if (map.getSource(plotted.sourceId)) map.removeSource(plotted.sourceId);
+      });
+    };
+    const resetResultState = () => {
+      clearPlottedNavigation();
+      clearResult(map);
+      selected = null;
+      traceResult = null;
+      basinResult = null;
+      navigationSources = {};
+      loadedNavigation = "";
+      source.replaceChildren(new Option("Press ‘Load sources & plot’ first", ""));
+      basinButton.disabled = true;
+      navigationButton.disabled = true;
+      source.disabled = true;
+      exportButton.disabled = true;
+      addLayersButton.disabled = true;
+      navigationButton.textContent = "1. Load sources & plot navigation";
+    };
+    const beginRequest = (): AbortSignal => {
+      activeAbortController?.abort();
+      activeAbortController = new AbortController();
+      return activeAbortController.signal;
+    };
+    const isCurrent = (generation: number, comid: string): boolean =>
+      !disposed && generation === requestId && selected?.comid === comid;
     const containerRender = (container: HTMLElement) => {
       container.replaceChildren();
       container.style.cssText = "display:flex;flex-direction:column;gap:8px;padding:10px;box-sizing:border-box;height:100%;overflow:auto;font-size:12px;color:hsl(var(--foreground));";
@@ -298,31 +341,39 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       container.append(title, hint, direction, basinButton, navigation, source, distance, navigationButton, addLayersButton, exportButton, clearButton, status);
       return () => undefined;
     };
-    const unregister = app.registerRightPanel?.({ id: PANEL, title: "USGS NLDI", dock: "replace-style", defaultWidth: 330, render: containerRender });
     const setStatus = (message: string) => { status.textContent = message; };
     const lookupBasin = async () => {
       if (!selected?.comid) { setStatus("No COMID was returned for this point."); return; }
+      const generation = requestId;
+      const comid = selected.comid;
+      const signal = beginRequest();
       setStatus("Requesting upstream basin…");
       try {
-        const basin = asCollection(await fetchJson(buildBasinUrl("comid", selected.comid)));
+        const basin = asCollection(await fetchJson(buildBasinUrl("comid", comid), { signal }));
+        if (!isCurrent(generation, comid)) return;
         basinResult = basin;
         renderBasin(map, basin);
         exportButton.disabled = false;
         addLayersButton.disabled = false;
-        setStatus(`Upstream basin rendered for COMID ${selected.comid}.`);
+        setStatus(`Upstream basin rendered for COMID ${comid}.`);
       } catch (error) { setStatus(error instanceof Error ? error.message : "Basin request failed."); }
     };
     const plotNavigation = async () => {
       if (!selected?.comid || !navigation.value) { setStatus("Select a navigation method after tracing a point."); return; }
       const km = Number(distance.value);
       if (!Number.isFinite(km) || km < 1 || km > 9999) { setStatus("Distance must be between 1 and 9999 km."); return; }
+      const generation = requestId;
+      const comid = selected.comid;
+      const signal = beginRequest();
       setStatus("Discovering NLDI navigation sources…");
       try {
         if (loadedNavigation !== navigation.value) {
-          const links = await fetchJson(buildNavigationUrl(selected.comid));
+          const links = await fetchJson(buildNavigationUrl(comid), { signal });
+          if (!isCurrent(generation, comid)) return;
           const navigationUrl = (links as Record<string, unknown>)[navigation.value];
           if (typeof navigationUrl !== "string") throw new Error("That navigation method is not available for this COMID.");
-          navigationSources = parseNavigationSources(await fetchJson(buildNavigationSourceUrl(navigationUrl, { distance: km })));
+          navigationSources = parseNavigationSources(await fetchJson(buildNavigationSourceUrl(navigationUrl, { distance: km }), { signal }));
+          if (!isCurrent(generation, comid)) return;
           source.replaceChildren(...Object.keys(navigationSources).sort((a, b) => (a.toLowerCase() === "flowlines" ? -1 : b.toLowerCase() === "flowlines" ? 1 : a.localeCompare(b))).map((name) => new Option(sourceLabel(name), name)));
           source.disabled = false;
           source.value = Object.keys(navigationSources).find((name) => name.toLowerCase() === "flowlines") ?? Object.keys(navigationSources)[0] ?? "";
@@ -330,27 +381,30 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         }
         const sourceUrl = navigationSources[source.value];
         if (!sourceUrl) throw new Error("NLDI returned no plottable navigation source.");
-        const result = asCollection(await fetchJson(buildNavigationSourceUrl(sourceUrl, { distance: km })));
+        const result = asCollection(await fetchJson(buildNavigationSourceUrl(sourceUrl, { distance: km }), { signal }));
+        if (!isCurrent(generation, comid)) return;
         const plotted = addNavigationLayer(map, result, `${sourceLabel(source.value)} · ${navigation.value}`, plottedNavigation.length + 1);
         plottedNavigation.push(plotted);
         exportButton.disabled = false;
         addLayersButton.disabled = false;
         navigationButton.textContent = "Plot another navigation layer";
-        setStatus(`Added ${sourceLabel(source.value)} via ${navigation.value} for COMID ${selected.comid} (${km} km). Existing navigation layers remain on the map.`);
+        setStatus(`Added ${sourceLabel(source.value)} via ${navigation.value} for COMID ${comid} (${km} km). Existing navigation layers remain on the map.`);
       } catch (error) { setStatus(error instanceof Error ? error.message : "Navigation request failed."); }
     };
     const onClick = async (event: MapMouseEvent) => {
       const currentRequest = ++requestId;
+      const signal = beginRequest();
       const point: Point = { type: "Point", coordinates: [event.lngLat.lng, event.lngLat.lat] };
       selected = { point }; basinButton.disabled = true; navigationButton.disabled = true; source.disabled = true; loadedNavigation = ""; navigationSources = {}; source.replaceChildren(new Option("Press ‘Load sources & plot’ first", ""));
+      traceResult = null; basinResult = null; clearResult(map); exportButton.disabled = true; addLayersButton.disabled = true;
       setStatus("Tracing to the nearest NHD flowline…");
       try {
         let trace: NldiTraceResult;
         let usedFallback = false;
         try {
-          trace = parseFlowtraceResponse(await fetchJson(`${NLDI_API}/pygeoapi/processes/nldi-flowtrace/execution?f=json`, { method: "POST", headers: { "Content-Type": "application/json" }, body: buildFlowtraceBody(event.lngLat.lng, event.lngLat.lat, direction.value as NldiDirection) }));
+          trace = parseFlowtraceResponse(await fetchJson(`${NLDI_API}/pygeoapi/processes/nldi-flowtrace/execution?f=json`, { method: "POST", headers: { "Content-Type": "application/json" }, body: buildFlowtraceBody(event.lngLat.lng, event.lngLat.lat, direction.value as NldiDirection), signal }));
         } catch (processError) {
-          const fallback = await fallbackTrace(event.lngLat.lng, event.lngLat.lat, direction.value as NldiDirection);
+          const fallback = await fallbackTrace(event.lngLat.lng, event.lngLat.lat, direction.value as NldiDirection, signal);
           trace = fallback.trace;
           usedFallback = fallback.usedFallback;
           console.warn("USGS NLDI flowtrace process was unavailable; used hydrolocation fallback.", processError);
@@ -361,7 +415,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         basinResult = null;
         addLayersButton.disabled = false;
         render(map, point, trace);
-        const hydro = await fetchJson(buildHydrolocationUrl(event.lngLat.lng, event.lngLat.lat));
+        const hydro = await fetchJson(buildHydrolocationUrl(event.lngLat.lng, event.lngLat.lat), { signal });
         if (disposed || currentRequest !== requestId) return;
         const hydroObject = (hydro && typeof hydro === "object" ? hydro : {}) as Record<string, unknown>;
         selected.comid = trace.comid ?? findValue(hydroObject, ["comid", "COMID"]) ?? findValue((hydroObject.features as Feature[] | undefined)?.[0]?.properties, ["comid", "COMID"]);
@@ -377,6 +431,33 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         if (!disposed) setStatus(error instanceof Error ? error.message : "NLDI request failed.");
       });
     };
+    let resourcesBound = false;
+    const cleanupResources = () => {
+      if (resourcesBound) {
+        resourcesBound = false;
+        map.off("click", clickListener);
+        map.getCanvas().style.cursor = "";
+      }
+      activeAbortController?.abort();
+      activeAbortController = null;
+      ++requestId;
+      resetResultState();
+    };
+    const bindResources = () => {
+      if (disposed || resourcesBound) return;
+      resourcesBound = true;
+      map.on("click", clickListener);
+      map.getCanvas().style.cursor = "crosshair";
+    };
+    const unregister = app.registerRightPanel?.({
+      id: PANEL,
+      title: "USGS NLDI",
+      dock: "replace-style",
+      defaultWidth: 330,
+      render: containerRender,
+      onClose: cleanupResources,
+      onOpen: bindResources,
+    });
     basinButton.addEventListener("click", () => void lookupBasin());
     navigationButton.addEventListener("click", () => void plotNavigation());
     exportButton.addEventListener("click", () => {
@@ -402,12 +483,11 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       setStatus(`Added ${layerIds.length} NLDI layers to one “USGS NLDI results” group.`);
     });
     navigation.addEventListener("change", () => { loadedNavigation = ""; navigationSources = {}; source.replaceChildren(new Option("Press ‘Load sources & plot’ first", "")); source.disabled = true; });
-    clearButton.addEventListener("click", () => { selected = null; traceResult = null; basinResult = null; navigationSources = {}; loadedNavigation = ""; source.replaceChildren(new Option("Press ‘Load sources & plot’ first", "")); plottedNavigation.splice(0).forEach((plotted) => { plotted.removeHover(); plotted.layerIds.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); }); if (map.getSource(plotted.sourceId)) map.removeSource(plotted.sourceId); }); clearResult(map); basinButton.disabled = true; navigationButton.disabled = true; source.disabled = true; exportButton.disabled = true; addLayersButton.disabled = true; navigationButton.textContent = "1. Load sources & plot navigation"; setStatus("NLDI result cleared."); });
-    map.on("click", clickListener);
-    map.getCanvas().style.cursor = "crosshair";
+    clearButton.addEventListener("click", () => { activeAbortController?.abort(); activeAbortController = null; ++requestId; resetResultState(); setStatus("NLDI result cleared."); });
+    bindResources();
     app.openRightPanel?.(PANEL);
     (map as MapLibreMap & { __usgsNldiCleanup?: () => void }).__usgsNldiCleanup = () => {
-      disposed = true; ++requestId; map.off("click", clickListener); map.getCanvas().style.cursor = ""; plottedNavigation.splice(0).forEach((plotted) => { plotted.removeHover(); plotted.layerIds.forEach((id) => { if (map.getLayer(id)) map.removeLayer(id); }); if (map.getSource(plotted.sourceId)) map.removeSource(plotted.sourceId); }); clearResult(map); unregister?.(); app.closeRightPanel?.(PANEL);
+      disposed = true; ++requestId; cleanupResources(); unregister?.(); app.closeRightPanel?.(PANEL);
     };
   },
   deactivate(app) { app.getMap?.() && (app.getMap() as MapLibreMap & { __usgsNldiCleanup?: () => void }).__usgsNldiCleanup?.(); },

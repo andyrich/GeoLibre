@@ -19,12 +19,12 @@ After a trace, GeoLibre calls NLDI hydrolocation for the clicked coordinate.
 When a COMID is available, use **Basin from hydrolocation** to request the
 simplified upstream basin. The selected COMID also enables navigation options
 for upstream mainstem, upstream tributaries, downstream mainstem, and
-downstream diversions. Set a distance in kilometres and choose **Plot COMID
-navigation** to load the available catalogs. You can then choose NHD flowlines,
+downstream diversions. Set a distance in kilometres and choose **1. Load
+sources & plot navigation** to load the available catalogs. You can then choose NHD flowlines,
 streamgages (`ca_gages` or `nwissite`), groundwater wells (`nwisgw`),
 Geospatial Fabric points (`gfv11_pois`), HUC12 pour points (`huc12pp`),
 New Mexico water sites (`nmwdi-st`), or another catalog returned by NLDI.
-Choose **Plot COMID navigation** again to draw the selected features on the
+Choose **Plot another navigation layer** to draw the selected features on the
 map; flowlines are purple and point catalogs are also rendered by the
 navigation layer. These are chained
 workflows: the selected map point feeds hydrolocation, its COMID feeds the
