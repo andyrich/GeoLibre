@@ -440,14 +440,6 @@ export {
   type NldiDirection,
   type NldiTraceResult,
 } from "./plugins/maplibre-usgs-nldi";
-export {
-  buildDischargeUrl,
-  maplibreUsgsDischargePlugin,
-  parseDischargeFeatures,
-  USGS_DISCHARGE_PLUGIN_ID,
-  type UsgsDischargeLabelMode,
-  type UsgsDischargeObservation,
-} from "./plugins/maplibre-usgs-discharge";
 export { maplibreNasaEarthdataPlugin } from "./plugins/maplibre-nasa-earthdata";
 export {
   DEFAULT_EARTHDATA_GIS_LABELS,
