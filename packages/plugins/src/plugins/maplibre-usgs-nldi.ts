@@ -120,7 +120,8 @@ export const DEFAULT_USGS_NLDI_LABELS: UsgsNldiLabels = {
     }`,
   requestFailed: "NLDI request failed.",
   nothingToAdd: "There are no rendered NLDI features to add.",
-  layersAdded: (count) => `Added ${count} NLDI layers to one \u201cUSGS NLDI results\u201d group.`,
+  layersAdded: (count) =>
+    `Added ${count} NLDI ${count === 1 ? "layer" : "layers"} to one \u201cUSGS NLDI results\u201d group.`,
   layerGroupName: "USGS NLDI results",
   layerFlowline: "NLDI flowline",
   layerRaindrop: "NLDI raindrop path",
@@ -755,9 +756,12 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         if (!isCurrent(generation, comid)) return;
         setStatus(error instanceof Error ? error.message : labels.basinFailed);
       } finally {
-        // Only the newest request may re-enable the button; an older one
-        // settling late must not undo the disable a newer request applied.
-        if (isCurrent(generation, comid)) basinButton.disabled = false;
+        // Keyed on the current selection, not on `generation`: the two buttons
+        // share one request token, so a navigation request superseding this one
+        // would otherwise leave the basin button stuck disabled. A COMID is only
+        // set once a trace has resolved, so this stays disabled during a fresh
+        // trace and after Clear.
+        if (!disposed && selected?.comid) basinButton.disabled = false;
       }
     };
     const plotNavigation = async () => {
@@ -778,19 +782,26 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       // labelling the response with a value the user changed mid-request would
       // describe a different catalog than the one actually plotted.
       const navigationMethod = navigation.value;
+      // The catalog list depends on the search radius too: a source that only
+      // appears within a larger distance must not be hidden by a cache keyed on
+      // the method alone.
+      const navigationKey = `${navigationMethod}|${km}`;
       const signal = beginRequest();
       navigationButton.disabled = true;
       setStatus(labels.discoveringSources);
       try {
-        if (loadedNavigation !== navigationMethod) {
+        if (loadedNavigation !== navigationKey) {
           const links = await fetchJson(buildNavigationUrl(comid), { signal });
-          if (!isCurrent(generation, comid)) return;
+          if (!isCurrent(generation, comid) || navigation.value !== navigationMethod) return;
           const navigationUrl = (links as Record<string, unknown>)[navigationMethod];
           if (typeof navigationUrl !== "string") throw new Error(labels.navigationUnavailable);
-          navigationSources = parseNavigationSources(
+          const discovered = parseNavigationSources(
             await fetchJson(buildNavigationSourceUrl(navigationUrl, { distance: km }), { signal }),
           );
-          if (!isCurrent(generation, comid)) return;
+          // The "change" listener resets the source list when the method
+          // changes, so a superseded discovery must not repopulate it.
+          if (!isCurrent(generation, comid) || navigation.value !== navigationMethod) return;
+          navigationSources = discovered;
           source.replaceChildren(
             ...Object.keys(navigationSources)
               .sort((a, b) =>
@@ -807,7 +818,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
             Object.keys(navigationSources).find((name) => name.toLowerCase() === "flowlines") ??
             Object.keys(navigationSources)[0] ??
             "";
-          loadedNavigation = navigationMethod;
+          loadedNavigation = navigationKey;
         }
         const selectedSource = source.value;
         const sourceUrl = navigationSources[selectedSource];
@@ -842,7 +853,8 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         if (!isCurrent(generation, comid)) return;
         setStatus(error instanceof Error ? error.message : labels.navigationFailed);
       } finally {
-        if (isCurrent(generation, comid)) navigationButton.disabled = false;
+        // Same reasoning as lookupBasin's finally.
+        if (!disposed && selected?.comid) navigationButton.disabled = false;
       }
     };
     const onClick = async (event: MapMouseEvent) => {
