@@ -563,6 +563,9 @@ function popupText(properties: Record<string, unknown> | null | undefined): stri
     : labels.noAttributes;
 }
 
+/** Teardown closure published by `activate` for `deactivate` to call. */
+let teardown: (() => void) | null = null;
+
 export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
   id: USGS_NLDI_PLUGIN_ID,
   name: "USGS NLDI",
@@ -983,6 +986,9 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       title: labels.panelTitle,
       dock: "replace-style",
       defaultWidth: 330,
+      // The panel is the whole UI, so closing it from the header must also
+      // mark the plugin inactive in the Plugins menu.
+      deactivatePluginOnClose: true,
       render: containerRender,
       onClose: cleanupResources,
       onOpen: bindResources,
@@ -1076,17 +1082,17 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     });
     bindResources();
     app.openRightPanel?.(PANEL);
-    (map as MapLibreMap & { __usgsNldiCleanup?: () => void }).__usgsNldiCleanup = () => {
+    teardown = () => {
       disposed = true;
       ++requestId;
       cleanupResources();
       unregister?.();
       app.closeRightPanel?.(PANEL);
+      teardown = null;
     };
   },
-  deactivate(app) {
-    app.getMap?.() &&
-      (app.getMap() as MapLibreMap & { __usgsNldiCleanup?: () => void }).__usgsNldiCleanup?.();
+  deactivate() {
+    teardown?.();
   },
 };
 
