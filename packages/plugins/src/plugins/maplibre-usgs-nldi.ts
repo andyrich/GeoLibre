@@ -492,7 +492,9 @@ function addNavigationLayer(
     if (popup.isOpen()) popup.setLngLat(event.lngLat);
   };
   const leave = () => {
-    map.getCanvas().style.cursor = "";
+    // Back to the panel's click-to-trace cursor, not the default: the map is
+    // still in trace mode for as long as these layers exist.
+    map.getCanvas().style.cursor = "crosshair";
     popup.remove();
   };
   for (const layerId of layerIds) {
@@ -531,7 +533,7 @@ function styleThemedSelect(select: HTMLSelectElement): void {
 }
 
 function sourceLabel(name: string): string {
-  const labels: Record<string, string> = {
+  const sourceNames: Record<string, string> = {
     ca_gages: "California streamgages (ca_gages)",
     nwissite: "NWIS surface-water sites (streamgages)",
     nwisgw: "NWIS groundwater wells",
@@ -540,7 +542,7 @@ function sourceLabel(name: string): string {
     "nmwdi-st": "New Mexico water sites",
     flowlines: "NHDPlus flowlines",
   };
-  return labels[name.toLowerCase()] ?? name;
+  return sourceNames[name.toLowerCase()] ?? name;
 }
 
 function popupText(properties: Record<string, unknown> | null | undefined): string {
@@ -847,21 +849,32 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         basinResult = null;
         addLayersButton.disabled = false;
         render(map, point, trace);
-        const hydro = await fetchJson(buildHydrolocationUrl(event.lngLat.lng, event.lngLat.lat), {
-          signal,
-        });
-        if (disposed || currentRequest !== requestId) return;
-        const hydroObject = (hydro && typeof hydro === "object" ? hydro : {}) as Record<
-          string,
-          unknown
-        >;
-        selected.comid =
-          trace.comid ??
-          findValue(hydroObject, ["comid", "COMID"]) ??
-          findValue((hydroObject.features as Feature[] | undefined)?.[0]?.properties, [
-            "comid",
-            "COMID",
-          ]);
+        // Only worth a second round-trip when the trace itself yielded no COMID:
+        // the fallback path already resolved one from this same endpoint. Its
+        // failure must not undo a flowline that has already rendered, so it gets
+        // its own catch rather than falling into the outer one.
+        if (!trace.comid) {
+          try {
+            const hydro = await fetchJson(
+              buildHydrolocationUrl(event.lngLat.lng, event.lngLat.lat),
+              { signal },
+            );
+            if (disposed || currentRequest !== requestId) return;
+            const hydroObject = (hydro && typeof hydro === "object" ? hydro : {}) as Record<
+              string,
+              unknown
+            >;
+            selected.comid =
+              findValue(hydroObject, ["comid", "COMID"]) ??
+              findValue((hydroObject.features as Feature[] | undefined)?.[0]?.properties, [
+                "comid",
+                "COMID",
+              ]);
+          } catch (hydroError) {
+            if (disposed || currentRequest !== requestId) return;
+            console.warn("USGS NLDI hydrolocation lookup failed after the trace.", hydroError);
+          }
+        }
         basinButton.disabled = !selected.comid;
         navigationButton.disabled = !selected.comid;
         source.disabled = !selected.comid;
