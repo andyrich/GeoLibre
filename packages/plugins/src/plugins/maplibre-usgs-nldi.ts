@@ -76,6 +76,8 @@ export interface UsgsNldiLabels {
   noFlowlineNearby: string;
   httpError: (status: number, detail: string) => string;
   noAttributes: string;
+  /** Display names for NLDI's navigation catalogs, keyed by lowercase source id. */
+  catalogNames: Record<string, string>;
 }
 
 export const DEFAULT_USGS_NLDI_LABELS: UsgsNldiLabels = {
@@ -131,6 +133,15 @@ export const DEFAULT_USGS_NLDI_LABELS: UsgsNldiLabels = {
   noFlowlineNearby: "NLDI could not find a flowline near this point.",
   httpError: (status, detail) => `USGS NLDI returned HTTP ${status}${detail ? `: ${detail}` : ""}`,
   noAttributes: "No attributes returned by NLDI.",
+  catalogNames: {
+    ca_gages: "California streamgages (ca_gages)",
+    nwissite: "NWIS surface-water sites (streamgages)",
+    nwisgw: "NWIS groundwater wells",
+    gfv11_pois: "USGS Geospatial Fabric points",
+    huc12pp: "HUC12 pour points",
+    "nmwdi-st": "New Mexico water sites",
+    flowlines: "NHDPlus flowlines",
+  },
 };
 
 let labels: UsgsNldiLabels = { ...DEFAULT_USGS_NLDI_LABELS };
@@ -538,16 +549,7 @@ function styleThemedSelect(select: HTMLSelectElement): void {
 }
 
 function sourceLabel(name: string): string {
-  const sourceNames: Record<string, string> = {
-    ca_gages: "California streamgages (ca_gages)",
-    nwissite: "NWIS surface-water sites (streamgages)",
-    nwisgw: "NWIS groundwater wells",
-    gfv11_pois: "USGS Geospatial Fabric points",
-    huc12pp: "HUC12 pour points",
-    "nmwdi-st": "New Mexico water sites",
-    flowlines: "NHDPlus flowlines",
-  };
-  return sourceNames[name.toLowerCase()] ?? name;
+  return labels.catalogNames[name.toLowerCase()] ?? name;
 }
 
 function popupText(properties: Record<string, unknown> | null | undefined): string {
@@ -618,6 +620,16 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     const clearButton = button(labels.clearButton);
     let navigationSources: Record<string, string> = {};
     let loadedNavigation = "";
+    // The button reads "load sources & plot" until something has been plotted
+    // for the current selection, then "plot another". Tracked explicitly so a
+    // locale switch can re-render whichever state is showing.
+    let navigationPlotted = false;
+    const setNavigationButtonLabel = (plotted: boolean) => {
+      navigationPlotted = plotted;
+      navigationButton.textContent = plotted
+        ? labels.navigationButtonAgain
+        : labels.navigationButton;
+    };
     const clearPlottedNavigation = () => {
       plottedNavigation.splice(0).forEach((plotted) => {
         plotted.removeHover();
@@ -641,7 +653,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       source.disabled = true;
       exportButton.disabled = true;
       addLayersButton.disabled = true;
-      navigationButton.textContent = labels.navigationButton;
+      setNavigationButtonLabel(false);
     };
     const beginRequest = (): AbortSignal => {
       activeAbortController?.abort();
@@ -669,6 +681,27 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         addLayersButton.textContent = labels.addLayersButton;
         clearButton.textContent = labels.clearButton;
         distance.placeholder = labels.distancePlaceholder;
+        setNavigationButtonLabel(navigationPlotted);
+        const relabel = (select: HTMLSelectElement, texts: Record<string, string>) => {
+          for (const option of Array.from(select.options))
+            if (texts[option.value] !== undefined) option.textContent = texts[option.value];
+        };
+        relabel(direction, {
+          none: labels.directionComplete,
+          up: labels.directionUp,
+          down: labels.directionDown,
+        });
+        relabel(navigation, {
+          "": labels.navigationPlaceholder,
+          upstreamMain: labels.navigationUpstreamMain,
+          upstreamTributaries: labels.navigationUpstreamTributaries,
+          downstreamMain: labels.navigationDownstreamMain,
+          downstreamDiversions: labels.navigationDownstreamDiversions,
+        });
+        // The source select holds either the placeholder or catalog names, and
+        // both come from the label set.
+        for (const option of Array.from(source.options))
+          option.textContent = option.value ? sourceLabel(option.value) : labels.sourcePlaceholder;
       };
       container.append(
         title,
@@ -796,7 +829,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         plottedNavigation.push(plotted);
         exportButton.disabled = false;
         addLayersButton.disabled = false;
-        navigationButton.textContent = labels.navigationButtonAgain;
+        setNavigationButtonLabel(true);
         setStatus(labels.navigationAdded(sourceLabel(selectedSource), navigationMethod, comid, km));
       } catch (error) {
         if (!isCurrent(generation, comid)) return;
@@ -816,7 +849,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       loadedNavigation = "";
       navigationSources = {};
       source.replaceChildren(new Option(labels.sourcePlaceholder, ""));
-      navigationButton.textContent = labels.navigationButton;
+      setNavigationButtonLabel(false);
       traceResult = null;
       basinResult = null;
       // Drop the previous point's navigation layers too, otherwise they linger
@@ -1002,6 +1035,8 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       navigationSources = {};
       source.replaceChildren(new Option(labels.sourcePlaceholder, ""));
       source.disabled = true;
+      // The next press reloads the catalog list, so drop the "plot another" label.
+      setNavigationButtonLabel(false);
     });
     clearButton.addEventListener("click", () => {
       activeAbortController?.abort();

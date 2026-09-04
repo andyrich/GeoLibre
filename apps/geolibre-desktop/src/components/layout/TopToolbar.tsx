@@ -904,6 +904,15 @@ export function TopToolbar({
           ? t("usgsNldi.httpErrorDetail", { status, detail })
           : t("usgsNldi.httpError", { status }),
       noAttributes: t("usgsNldi.noAttributes"),
+      catalogNames: {
+        ca_gages: t("usgsNldi.catalogCaGages"),
+        nwissite: t("usgsNldi.catalogNwisSite"),
+        nwisgw: t("usgsNldi.catalogNwisGw"),
+        gfv11_pois: t("usgsNldi.catalogGfv11Pois"),
+        huc12pp: t("usgsNldi.catalogHuc12pp"),
+        "nmwdi-st": t("usgsNldi.catalogNmwdiSt"),
+        flowlines: t("usgsNldi.catalogFlowlines"),
+      },
     });
     setTilecodeLabels({
       title: t("tilecodePlugin.title"),

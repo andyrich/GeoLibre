@@ -7782,6 +7782,13 @@
     "noFlowlineNearby": "NLDI could not find a flowline near this point.",
     "httpError": "USGS NLDI returned HTTP {{status}}",
     "httpErrorDetail": "USGS NLDI returned HTTP {{status}}: {{detail}}",
-    "noAttributes": "No attributes returned by NLDI."
+    "noAttributes": "No attributes returned by NLDI.",
+    "catalogCaGages": "California streamgages (ca_gages)",
+    "catalogNwisSite": "NWIS surface-water sites (streamgages)",
+    "catalogNwisGw": "NWIS groundwater wells",
+    "catalogGfv11Pois": "USGS Geospatial Fabric points",
+    "catalogHuc12pp": "HUC12 pour points",
+    "catalogNmwdiSt": "New Mexico water sites",
+    "catalogFlowlines": "NHDPlus flowlines"
   }
 }
