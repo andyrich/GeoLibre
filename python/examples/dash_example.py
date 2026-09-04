@@ -17,12 +17,6 @@ app.layout = html.Div(
         html.Pre(id="click-output"),
     ]
 )
-app.layout = html.Div(
-    [
-        m,
-        html.Pre(id="click-output"),
-    ]
-)
 
 
 @app.callback(
@@ -32,9 +26,6 @@ app.layout = html.Div(
 def show_click(click_data):
     return "Click the map" if click_data is None else str(click_data)
 
-
-if __name__ == "__main__":
-    app.run(debug=True)
 
 if __name__ == "__main__":
     app.run(debug=True)
