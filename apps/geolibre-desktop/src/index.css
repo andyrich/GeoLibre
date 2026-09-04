@@ -1684,6 +1684,18 @@ body,
   color-scheme: dark;
 }
 
+/* The NLDI panel uses native selects. Theme their option popups explicitly so
+   dropdown text remains visible when the app theme differs from the OS theme. */
+.geolibre-usgs-nldi-panel select option {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.dark .geolibre-usgs-nldi-panel select,
+.dark .geolibre-usgs-nldi-panel input {
+  color-scheme: dark;
+}
+
 .geolibre-colorbar-control .colorbar-gui-input,
 .geolibre-colorbar-control .colorbar-gui-select,
 .geolibre-colorbar-control .colorbar-gui-textarea,

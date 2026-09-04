@@ -402,6 +402,12 @@ function button(label: string): HTMLButtonElement {
   return element;
 }
 
+function styleThemedSelect(select: HTMLSelectElement): void {
+  select.style.cssText =
+    "padding:6px;border:1px solid hsl(var(--border));border-radius:5px;background:hsl(var(--background));";
+  select.style.setProperty("color", "hsl(var(--foreground))", "important");
+}
+
 function sourceLabel(name: string): string {
   const labels: Record<string, string> = {
     ca_gages: "California streamgages (ca_gages)",
@@ -445,8 +451,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       new Option("Upstream only — returns the reach above the point", "up"),
       new Option("Downstream only — returns the reach below the point", "down"),
     );
-    direction.style.cssText =
-      "padding:6px;border:1px solid hsl(var(--border));border-radius:5px;background:transparent;color:inherit;";
+    styleThemedSelect(direction);
     const status = document.createElement("div");
     status.style.cssText = "line-height:1.4;color:hsl(var(--muted-foreground));";
     const basinButton = button("Basin from hydrolocation");
@@ -459,13 +464,11 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       new Option("Downstream main — follow the primary channel", "downstreamMain"),
       new Option("Downstream diversions — follow split-flow paths", "downstreamDiversions"),
     );
-    navigation.style.cssText =
-      "padding:6px;border:1px solid hsl(var(--border));border-radius:5px;background:transparent;color:inherit;";
+    styleThemedSelect(navigation);
     const source = document.createElement("select");
     source.append(new Option("Press ‘Load sources & plot’ first", ""));
     source.disabled = true;
-    source.style.cssText =
-      "padding:6px;border:1px solid hsl(var(--border));border-radius:5px;background:transparent;color:inherit;";
+    styleThemedSelect(source);
     const distance = document.createElement("input");
     distance.type = "number";
     distance.min = "1";
@@ -520,6 +523,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       !disposed && generation === requestId && selected?.comid === comid;
     const containerRender = (container: HTMLElement) => {
       container.replaceChildren();
+      container.classList.add("geolibre-usgs-nldi-panel");
       container.style.cssText =
         "display:flex;flex-direction:column;gap:8px;padding:10px;box-sizing:border-box;height:100%;overflow:auto;font-size:12px;color:hsl(var(--foreground));";
       const title = document.createElement("strong");
