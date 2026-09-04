@@ -7760,6 +7760,7 @@
     "discoveringSources": "Discovering NLDI navigation sources…",
     "navigationUnavailable": "That navigation method is not available for this COMID.",
     "noPlottableSource": "NLDI returned no plottable navigation source.",
+    "navigationEmpty": "{{source}} returned no mappable features for this navigation.",
     "navigationAdded": "Added {{source}} via {{navigation}} for COMID {{comid}} ({{km}} km). Existing navigation layers remain on the map.",
     "navigationFailed": "Navigation request failed.",
     "tracing": "Tracing to the nearest NHD flowline…",

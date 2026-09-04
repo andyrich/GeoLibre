@@ -57,6 +57,7 @@ export interface UsgsNldiLabels {
   discoveringSources: string;
   navigationUnavailable: string;
   noPlottableSource: string;
+  navigationEmpty: (source: string) => string;
   navigationAdded: (source: string, navigation: string, comid: string, km: number) => string;
   navigationFailed: string;
   tracing: string;
@@ -106,6 +107,7 @@ export const DEFAULT_USGS_NLDI_LABELS: UsgsNldiLabels = {
   discoveringSources: "Discovering NLDI navigation sources\u2026",
   navigationUnavailable: "That navigation method is not available for this COMID.",
   noPlottableSource: "NLDI returned no plottable navigation source.",
+  navigationEmpty: (source) => `${source} returned no mappable features for this navigation.`,
   navigationAdded: (source, navigation, comid, km) =>
     `Added ${source} via ${navigation} for COMID ${comid} (${km} km). Existing navigation layers remain on the map.`,
   navigationFailed: "Navigation request failed.",
@@ -276,7 +278,10 @@ async function fetchJson(url: string, init?: RequestInit): Promise<unknown> {
     if (!response.ok) {
       let detail = "";
       try {
-        detail = String(((await response.json()) as { description?: unknown }).description ?? "");
+        // NLDI's linked-data endpoints answer with `description`; the
+        // pygeoapi process executions use OGC API Processes' `detail`.
+        const body = (await response.json()) as { description?: unknown; detail?: unknown };
+        detail = String(body.description ?? body.detail ?? "");
       } catch {
         /* non-JSON error */
       }
@@ -780,6 +785,14 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
           `${sourceLabel(selectedSource)} · ${navigationMethod}`,
           plottedNavigation.length + 1,
         );
+        // A response with no point/line geometry renders no layers, so say so
+        // rather than reporting a plot the user cannot see.
+        if (!plotted.layerIds.length) {
+          plotted.removeHover();
+          if (map.getSource(plotted.sourceId)) map.removeSource(plotted.sourceId);
+          setStatus(labels.navigationEmpty(sourceLabel(selectedSource)));
+          return;
+        }
         plottedNavigation.push(plotted);
         exportButton.disabled = false;
         addLayersButton.disabled = false;
@@ -848,6 +861,7 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
         traceResult = trace;
         basinResult = null;
         addLayersButton.disabled = false;
+        exportButton.disabled = false;
         render(map, point, trace);
         // Only worth a second round-trip when the trace itself yielded no COMID:
         // the fallback path already resolved one from this same endpoint. Its

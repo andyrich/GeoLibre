@@ -878,6 +878,7 @@ export function TopToolbar({
       discoveringSources: t("usgsNldi.discoveringSources"),
       navigationUnavailable: t("usgsNldi.navigationUnavailable"),
       noPlottableSource: t("usgsNldi.noPlottableSource"),
+      navigationEmpty: (source) => t("usgsNldi.navigationEmpty", { source }),
       navigationAdded: (source, navigation, comid, km) =>
         t("usgsNldi.navigationAdded", { source, navigation, comid, km }),
       navigationFailed: t("usgsNldi.navigationFailed"),
