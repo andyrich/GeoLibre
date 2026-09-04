@@ -1046,6 +1046,8 @@ export function createAppAPI(mapControllerRef?: RefObject<MapController | null>)
     queryOvertureFeatures,
     addLayerGroup: (name?: string, layerIds?: string[]) =>
       useAppStore.getState().addLayerGroup(name, layerIds),
+    moveLayersToGroup: (layerIds: string[], groupId: string | null) =>
+      useAppStore.getState().moveLayersToGroup(layerIds, groupId),
     removeLayerGroup: (id: string) => useAppStore.getState().removeLayerGroup(id),
     fitBounds: (bounds: [number, number, number, number]) =>
       mapControllerRef?.current?.fitBounds(bounds),

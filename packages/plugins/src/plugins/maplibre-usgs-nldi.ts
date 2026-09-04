@@ -624,6 +624,11 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     // for the current selection, then "plot another". Tracked explicitly so a
     // locale switch can re-render whichever state is showing.
     let navigationPlotted = false;
+    // "Add rendered results" is re-enabled after every basin/navigation request,
+    // so remember what already went into the Layers panel: re-adding everything
+    // would duplicate the flowline/point/basin under a second group.
+    const addedParts = new Set<string>();
+    let resultGroupId: string | null = null;
     const setNavigationButtonLabel = (plotted: boolean) => {
       navigationPlotted = plotted;
       navigationButton.textContent = plotted
@@ -647,6 +652,8 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       basinResult = null;
       navigationSources = {};
       loadedNavigation = "";
+      addedParts.clear();
+      resultGroupId = null;
       source.replaceChildren(new Option(labels.sourcePlaceholder, ""));
       basinButton.disabled = true;
       navigationButton.disabled = true;
@@ -850,6 +857,8 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
       navigationSources = {};
       source.replaceChildren(new Option(labels.sourcePlaceholder, ""));
       setNavigationButtonLabel(false);
+      addedParts.clear();
+      resultGroupId = null;
       traceResult = null;
       basinResult = null;
       // Drop the previous point's navigation layers too, otherwise they linger
@@ -998,10 +1007,11 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
     });
     addLayersButton.addEventListener("click", () => {
       if (!selected || !traceResult || !app.addGeoJsonLayer || !app.addLayerGroup) return;
-      const layers: Array<[string, FeatureCollection]> = [
-        [labels.layerFlowline, traceResult.flowline],
-        [labels.layerRaindrop, traceResult.raindropPath],
+      const layers: Array<[string, string, FeatureCollection]> = [
+        ["flowline", labels.layerFlowline, traceResult.flowline],
+        ["raindrop", labels.layerRaindrop, traceResult.raindropPath],
         [
+          "point",
           labels.layerSelectedPoint,
           {
             type: "FeatureCollection",
@@ -1015,18 +1025,25 @@ export const maplibreUsgsNldiPlugin: GeoLibrePlugin = {
           },
         ],
       ];
-      if (basinResult) layers.push([labels.layerBasin, basinResult]);
+      if (basinResult) layers.push(["basin", labels.layerBasin, basinResult]);
       plottedNavigation.forEach((plotted, index) =>
-        layers.push([labels.layerNavigation(index + 1), plotted.data]),
+        layers.push([`navigation-${index + 1}`, labels.layerNavigation(index + 1), plotted.data]),
       );
-      const layerIds = layers
-        .filter(([, data]) => data.features.length > 0)
-        .map(([name, data]) => app.addGeoJsonLayer(name, data));
-      if (!layerIds.length) {
+      const pending = layers.filter(
+        ([key, , data]) => data.features.length > 0 && !addedParts.has(key),
+      );
+      if (!pending.length) {
         setStatus(labels.nothingToAdd);
         return;
       }
-      app.addLayerGroup(labels.layerGroupName, layerIds);
+      const layerIds = pending.map(([key, name, data]) => {
+        addedParts.add(key);
+        return app.addGeoJsonLayer(name, data);
+      });
+      // Append to the group from the first click when we still can, so the
+      // results stay in one "USGS NLDI results" group as the docs describe.
+      if (resultGroupId && app.moveLayersToGroup) app.moveLayersToGroup(layerIds, resultGroupId);
+      else resultGroupId = app.addLayerGroup(labels.layerGroupName, layerIds);
       addLayersButton.disabled = true;
       setStatus(labels.layersAdded(layerIds.length));
     });
