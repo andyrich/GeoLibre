@@ -109,6 +109,7 @@ kepler.gl, see the [Comparison](comparison.md).
     - ArcGIS-style placement and styling controls: anchor, X/Y offset, rotation, wrap width, and letter case
     - Expression-driven label properties and placement priority
     - A Duplicate labels option, plus unique and concatenate modes that collapse points stacked at the same coordinate into a single deduplicated label
+    - Number formatting for a numeric label field: thousands and decimal separators with a fixed number of decimal places, either following the app language or pinned to a separator style, so populations read as 1,234,567 rather than 1234567
 - Popup and tooltip designer that decides what a viewer sees on click and hover, per layer, instead of dumping every property into the Identify popup
     - Pick which fields appear and in what order, relabel them, and format each value as text, a number with decimals and thousands separators, a date, a link, or an image, with an optional prefix and suffix
     - Title the popup from a field or an expression, or replace the rows entirely with an expression-built sentence, and show or hide the feature id
@@ -220,6 +221,7 @@ kepler.gl, see the [Comparison](comparison.md).
     - Download OSM Vector's four boundary numbers render as one Area of interest control with Use map extent and Draw on map shortcuts
 - Vector menu
     - **Geometry and analysis**: buffer, centroids, convex hull, dissolve, bounding box, simplify, clip, intersection, difference, union, spatial join, attribute join, select by value, select by expression, select by location, random extract, movement, space-time, and cell coverage
+    - Buffer takes a side: Outside grows each feature, Inside shrinks it, and Both sides keeps only the zone within the distance on either side of its boundary. Inside shrinks polygons only: a point or line has no interior, so the inward buffer empties it and the feature is dropped from the result and reported in the run log
     - **Data management**: merge layers, through a multi-layer parameter picker that unites attribute schemas and can record each feature's source layer
     - **Vertices and sampling**: extract vertices as points carrying their part and vertex index, and generate points along lines and polygon boundaries at a fixed geodesic interval
     - **Data quality**: check validity, fix geometries, and check topology rules

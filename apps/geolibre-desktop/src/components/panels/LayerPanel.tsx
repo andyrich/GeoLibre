@@ -30,6 +30,7 @@ import {
   createLayerLibraryEntryId,
   copyableLayerStyleKind,
   hasActiveQuickFilter,
+  isCesiumOnlyLayer,
   pluginOwnsPaint,
   supportsBridgedOpacity,
   useAppStore,
@@ -66,11 +67,7 @@ import {
   type TimePropertyCandidate,
   type TimePropertyRecord,
 } from "@geolibre/plugins";
-import {
-  defaultBlankBackgroundColor,
-  startFeatureSelection,
-  type MapController,
-} from "@geolibre/map";
+import { defaultBlankBackgroundColor, startFeatureSelection, type MapEngine } from "@geolibre/map";
 import {
   applyMapboxStyleImport,
   applyQmlImport,
@@ -79,6 +76,7 @@ import {
   buildGeoLibreQueryStyle,
   buildQml,
   buildSld,
+  isCesiumSupportedLayerType,
   isPlaceholderLayer,
   mapboxStyleToJson,
   geoLibreStyleSourceName,
@@ -253,11 +251,12 @@ import { participantCanEditLayer } from "../../lib/collab-protocol";
 import type { CollaborationApi } from "../../hooks/useCollaboration";
 import { BasemapPickerDialog } from "./BasemapPickerDialog";
 import { LayerPanelPlaceSearch } from "./LayerPanelPlaceSearch";
+import { useMapCapabilities } from "../../hooks/useMapCapabilities";
 import { LayerSwatchIcon } from "./LayerSwatchIcon";
 
 interface LayerPanelProps {
   themeMode: ThemeMode;
-  mapControllerRef: RefObject<MapController | null>;
+  mapControllerRef: RefObject<MapEngine | null>;
   collaborationApi?: CollaborationApi;
   onResizeStart: (event: ReactPointerEvent<HTMLDivElement>) => void;
   /** Id of the layer currently in a geometry-edit session, or null. */
@@ -659,6 +658,12 @@ export function LayerPanel({
   );
   const layers = useAppStore((s) => s.layers);
   const layerGroups = useAppStore((s) => s.layerGroups);
+  // The 3D globe draws a subset of the layer kinds MapLibre does, so rows it
+  // cannot render are flagged while it owns the primary map area (#2217).
+  const cesiumPrimary = useAppStore((s) => s.primaryRenderer === "cesium");
+  // The subset panel draws its extract box on the map surface, so it needs an
+  // engine the user can draw on — not merely "not the globe".
+  const capabilities = useMapCapabilities(mapControllerRef);
   const addLayerGroup = useAppStore((s) => s.addLayerGroup);
   const removeLayerGroup = useAppStore((s) => s.removeLayerGroup);
   const renameLayerGroup = useAppStore((s) => s.renameLayerGroup);
@@ -3310,7 +3315,10 @@ export function LayerPanel({
             const canExportRaster = layerCaps.export && canExportRasterLayer(layer);
             // COG/WMS/XYZ layers can also export a bounding-box subset (a clip)
             // via the in-browser geolibre-wasm extractors, drawn on the map.
-            const canExtractSubset = layerCaps.export && canExtractRasterSubset(layer);
+            // Gated on the engine's own drawing capability: the panel needs a
+            // surface the user can drag an extract box on.
+            const canExtractSubset =
+              layerCaps.export && capabilities.onMapDrawing && canExtractRasterSubset(layer);
             // Rasters added through the floating Add Raster Layer panel are
             // styled there; offer a shortcut to reopen that panel since it is
             // dismissed (and its on-map icon removed) when closed.
@@ -3515,6 +3523,28 @@ export function LayerPanel({
                             className="h-3 w-3 shrink-0 text-primary"
                             aria-label={t("quickFilters.layerFilteredHint")}
                           />
+                        </span>
+                      )}
+                      {/* The 3D globe renders a subset of the layer kinds the
+                          2D map does (#2217). An unsupported layer stays in the
+                          project and comes back when MapLibre does, so flag the
+                          row rather than leaving the layer silently absent. */}
+                      {cesiumPrimary && !isCesiumSupportedLayerType(layer) && (
+                        <span
+                          title={t("renderer.layerUnsupported")}
+                          className="shrink-0 rounded-sm bg-muted px-1 text-[10px] uppercase text-muted-foreground"
+                        >
+                          {t("mapGrid.only2d")}
+                        </span>
+                      )}
+                      {/* The mirror image: a Cesium Ion asset (issue #2290) has
+                          no 2D rendering, so flag it while MapLibre is primary. */}
+                      {!cesiumPrimary && isCesiumOnlyLayer(layer) && (
+                        <span
+                          title={t("renderer.layerCesiumOnly")}
+                          className="shrink-0 rounded-sm bg-muted px-1 text-[10px] uppercase text-muted-foreground"
+                        >
+                          {t("mapGrid.only3d")}
                         </span>
                       )}
                       <span className="shrink-0 text-[10px] uppercase text-muted-foreground">

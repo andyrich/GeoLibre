@@ -274,6 +274,10 @@
         "label": "Tambahkan Layer WMS",
         "description": "Tambahkan layanan WMS GetMap sebagai layer raster berubin."
       },
+      "csw": {
+        "label": "Cari Katalog CSW",
+        "description": "Cari kumpulan data di layanan katalog OGC dan tambahkan sumber daya web yang didukung ke peta."
+      },
       "wfs": {
         "label": "Tambahkan Layer WFS",
         "description": "Tambahkan fitur WFS dengan meminta GeoJSON dari layanan GetFeature."
@@ -421,6 +425,21 @@
       "noLayersFound": "Tidak ada layer yang ditemukan untuk layanan ini.",
       "retrieveError": "Tidak dapat mengambil layer dari layanan ini.",
       "version": "Versi WMS"
+    },
+    "csw": {
+      "defaultName": "Katalog CSW",
+      "urlPlaceholder": "https://example.com/csw",
+      "keyword": "Kata kunci",
+      "search": "Cari",
+      "searching": "Mencari…",
+      "results": "Hasil katalog",
+      "errorUrl": "Masukkan URL layanan CSW HTTP atau HTTPS yang valid.",
+      "searchError": "Tidak dapat mencari di katalog ini.",
+      "noResults": "Tidak ada kumpulan data yang cocok ditemukan.",
+      "invalidGeoJson": "Sumber daya yang dipilih bukan FeatureCollection GeoJSON.",
+      "addError": "Tidak dapat menambahkan sumber daya katalog ini.",
+      "addResource": "Tambahkan {{kind}}",
+      "noSupportedResources": "Tidak ada sumber daya WMS, WFS, ArcGIS, atau GeoJSON yang didukung diumumkan."
     },
     "wfs": {
       "defaultName": "Layer WFS",
@@ -615,6 +634,7 @@
       "errorRetrieveColumns": "Tidak dapat mengambil nama kolom.",
       "url": "URL teks berpembatas",
       "file": "File teks berpembatas",
+      "fileFilter": "CSV / TSV / TXT / Excel",
       "urlPlaceholder": "https://example.com/data.csv",
       "retrieving": "Mengambil...",
       "retrieveColumns": "Ambil kolom",
@@ -1805,6 +1825,19 @@
     "only2d": "Hanya 2D",
     "cesiumTokenHint": "Tambahkan token Cesium Ion di Pengaturan untuk medan dan citra Ion"
   },
+  "renderer": {
+    "basemap": "Peta dasar",
+    "imagery": "Citra",
+    "projectBasemap": "Peta dasar proyek",
+    "layerUnsupported": "Tidak dirender oleh bola dunia 3D",
+    "resetView": "Atur Ulang Tampilan",
+    "scene3D": "Bola dunia 3D",
+    "scene2D": "Peta 2D",
+    "sceneColumbus": "Tampilan Columbus",
+    "fullscreenEnter": "Layar penuh",
+    "fullscreenExit": "Keluar dari layar penuh",
+    "fullscreenUnavailable": "Layar penuh tidak tersedia"
+  },
   "mapContextMenu": {
     "copyCoordinatesHint": "Salin koordinat ke papan klip",
     "quickActions": "Aksi cepat",
@@ -2390,6 +2423,7 @@
       "mbtiles": "Layer MBTiles",
       "xyz": "Layer XYZ",
       "wms": "Layer WMS",
+      "csw": "Katalog CSW",
       "wfs": "Layer WFS",
       "wmts": "Layer WMTS",
       "ogcFeatures": "OGC API - Features",
@@ -2653,6 +2687,9 @@
       "splitViewGrid2x3": "Grid 2 × 3",
       "splitViewGrid3x3": "Grid 3 × 3",
       "splitViewSync": "Sinkronkan tampilan",
+      "renderingEngine": "Mesin render",
+      "rendererMapLibre": "MapLibre",
+      "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Lihat di Google Maps",
       "viewInGoogleEarth": "Lihat di Google Earth",
       "zoomIn": "Perbesar",
@@ -2852,6 +2889,7 @@
     },
     "plugin": {
       "maplibre-gl-annotations": "Anotasi",
+      "maplibre-gl-dimensions": "Dimensi",
       "maplibre-gl-streetview": "Tampilan Jalan",
       "maplibre-gl-time-slider": "Penggeser Waktu",
       "geolibre-timelapse": "Timelapse",
@@ -3451,6 +3489,7 @@
     "search": "Cari",
     "searchCurrentView": "Cari di area peta saat ini",
     "enterKeyword": "Masukkan kata kunci untuk memulai.",
+    "viewUnavailable": "Area peta saat ini tidak tersedia; matikan filter area peta untuk mencari.",
     "loadMore": "Muat lebih banyak",
     "searching": "Mencari…",
     "loadingMore": "Memuat lebih banyak kumpulan data…",
@@ -3843,6 +3882,27 @@
     "saveElement": "Simpan Elemen",
     "atPoint": "Pada Titik",
     "pinnedToExtent": "Disematkan ke Cakupan"
+  },
+  "dimensions": {
+    "toolbar": "Alat dimensi",
+    "layerName": "Dimensi",
+    "tools": {
+      "linear": "Dimensi linear",
+      "angular": "Dimensi sudut"
+    },
+    "unit": "Satuan",
+    "snap": "Snap ke verteks",
+    "color": "Warna dimensi",
+    "width": "Lebar garis",
+    "widthOptions": {
+      "thin": "Tipis",
+      "medium": "Sedang",
+      "thick": "Tebal"
+    },
+    "deleteLast": "Hapus dimensi terakhir",
+    "clearAll": "Bersihkan semua dimensi",
+    "newLayer": "Layer dimensi baru",
+    "confirmClearAll_other": "Hapus seluruh {{count}} dimensi di layer ini? Tindakan ini tidak dapat dibatalkan."
   },
   "pythonConsole": {
     "title": "Konsol Python",
@@ -4438,6 +4498,15 @@
                 "kilometers": "Kilometer",
                 "meters": "Meter",
                 "miles": "Mil"
+              }
+            },
+            "side": {
+              "label": "Sisi buffer",
+              "description": "Luar memperbesar setiap fitur, Dalam memperkecilnya, dan Kedua sisi hanya menyimpan zona dalam jarak tersebut di kedua sisi batasnya. Dalam memerlukan lapisan poligon — titik atau garis tidak memiliki bagian dalam.",
+              "options": {
+                "outside": "Luar (perbesar)",
+                "inside": "Dalam (perkecil)",
+                "both": "Kedua sisi"
               }
             }
           }
@@ -6349,7 +6418,6 @@
       "remove": "Hapus gabungan",
       "enabledTitle": "Terapkan gabungan ini",
       "missingLayer": "Layer gabungan tidak ditemukan",
-      "noCandidates": "Tidak ada layer lain dengan tabel atribut untuk digabungkan",
       "statsMatched": "{{matched}} dari {{total}} fitur cocok",
       "statsUnmatchedJoin_other": "{{count}} baris tabel tanpa kecocokan"
     },
@@ -6404,6 +6472,11 @@
       "offsetY": "Offset Y (em)",
       "rotation": "Rotasi (°)",
       "maxWidth": "Lebar bungkus (em)",
+      "numberFormat": "Format angka",
+      "numberFormatHint": "Nilai numerik diberi label dengan pemisah ribuan dan desimal, mis. {{sample}}. Nilai teks tidak berubah, dan ekspresi label memformat keluarannya sendiri.",
+      "numberDecimals": "Tempat desimal",
+      "numberLocale": "Pemisah",
+      "numberLocaleApp": "Ikuti bahasa aplikasi",
       "transform": "Huruf besar/kecil",
       "transformNone": "Seperti dimasukkan",
       "transformUppercase": "HURUF BESAR",
@@ -6557,6 +6630,7 @@
       "categories": "Kategori",
       "classColor": "Warna kelas {{index}}",
       "classColorPick": "Pilih warna kelas {{index}} dari layar",
+      "classOpacity": "Opasitas kelas {{index}}",
       "classValue": "Nilai kelas {{index}}",
       "colorExpression": "Ekspresi warna",
       "applyStyleType": "Terapkan jenis gaya",
@@ -6566,6 +6640,8 @@
       "pointRendererClustered": "Berkluster",
       "heatmapRadius": "Radius peta panas",
       "heatmapIntensity": "Intensitas peta panas",
+      "heatmapWeightField": "Bidang bobot",
+      "heatmapEqualWeight": "Tidak ada (bobot sama)",
       "clusterRadius": "Radius kluster (px)",
       "clusterMaxZoom": "Zoom maksimum kluster",
       "strokeWidthUnit": "Satuan lebar garis tepi",
@@ -6602,6 +6678,7 @@
     "mode2d": "2D",
     "mode3dExtrusion": "Ekstrusi 3D",
     "noControls": "Kontrol gaya belum tersedia untuk jenis layer ini.",
+    "tilesetSymbology": "Warna dan filter berlaku untuk tileset ini pada globe 3D.",
     "selectedLayerType": "Jenis layer yang dipilih: {{type}}",
     "footerDeck": "Perubahan berlaku langsung pada penataan gaya layer deck.gl DuckDB.",
     "footerMaplibre": "Perubahan berlaku langsung pada properti paint MapLibre.",
@@ -6702,6 +6779,7 @@
         "upcase": "Mengubah string menjadi huruf besar.",
         "downcase": "Mengubah string menjadi huruf kecil.",
         "slice": "Mengembalikan bagian dari string atau array.",
+        "numberFormat": "Memformat angka menjadi teks memakai pemisah ribuan dan desimal suatu lokal, dengan jumlah desimal tetap secara opsional.",
         "toNumber": "Mengubah nilai menjadi angka.",
         "toString": "Mengubah nilai menjadi string.",
         "toBoolean": "Mengubah nilai menjadi true atau false.",
@@ -7646,5 +7724,65 @@
       "downloadsStarted": "{{started}} unduhan dimulai. {{failed}} gagal.",
       "downloadCancelled": "Unduhan dibatalkan atau gagal."
     }
+  },
+  "usgsNldi": {
+    "panelTitle": "USGS NLDI",
+    "title": "Alat jaringan USGS NLDI",
+    "hint": "Pilih dulu arah garis aliran lalu klik peta. Kemudian pilih arah navigasi, tekan tombol yang disorot untuk memuat katalog yang tersedia, pilih katalog seperti stasiun duga air atau sumur, lalu tekan lagi untuk memplot katalog tersebut.",
+    "directionComplete": "Garis aliran lengkap — mengembalikan seluruh ruas NHD",
+    "directionUp": "Hanya hulu — mengembalikan ruas di atas titik",
+    "directionDown": "Hanya hilir — mengembalikan ruas di bawah titik",
+    "basinButton": "Daerah aliran dari hidrolokasi",
+    "navigationPlaceholder": "Pilih arah — wajib sebelum memplot",
+    "navigationUpstreamMain": "Alur utama hulu — mengikuti saluran utama",
+    "navigationUpstreamTributaries": "Anak sungai hulu — mencari cabang penyumbang",
+    "navigationDownstreamMain": "Alur utama hilir — mengikuti saluran utama",
+    "navigationDownstreamDiversions": "Pengalihan hilir — mengikuti jalur aliran bercabang",
+    "sourcePlaceholder": "Tekan “Muat sumber & plot” terlebih dahulu",
+    "distancePlaceholder": "Jarak (km)",
+    "navigationButton": "1. Muat sumber & plot navigasi",
+    "navigationButtonAgain": "Plot layer navigasi lain",
+    "exportButton": "Ekspor hasil yang diplot ke GeoJSON",
+    "addLayersButton": "Tambahkan hasil yang diplot ke Layer GeoLibre",
+    "clearButton": "Bersihkan hasil NLDI",
+    "noComid": "Tidak ada COMID yang dikembalikan untuk titik ini.",
+    "requestingBasin": "Meminta daerah aliran hulu…",
+    "basinRendered": "Daerah aliran hulu diplot untuk COMID {{comid}}.",
+    "basinFailed": "Permintaan daerah aliran gagal.",
+    "selectNavigation": "Pilih metode navigasi setelah menelusuri sebuah titik.",
+    "invalidDistance": "Jarak harus antara 1 dan 9999 km.",
+    "discoveringSources": "Menemukan sumber navigasi NLDI…",
+    "navigationUnavailable": "Metode navigasi tersebut tidak tersedia untuk COMID ini.",
+    "noPlottableSource": "NLDI tidak mengembalikan sumber navigasi yang dapat diplot.",
+    "navigationEmpty": "{{source}} tidak mengembalikan fitur yang dapat dipetakan untuk navigasi ini.",
+    "navigationAdded": "Menambahkan {{source}} melalui {{navigation}} untuk COMID {{comid}} ({{km}} km). Layer navigasi yang sudah ada tetap berada di peta.",
+    "navigationFailed": "Permintaan navigasi gagal.",
+    "tracing": "Menelusuri ke garis aliran NHD terdekat…",
+    "flowline": "Garis aliran diplot.",
+    "flowlineComid": "Garis aliran diplot; COMID {{comid}} siap untuk alur kerja daerah aliran.",
+    "flowlineFallback": "Garis aliran diplot menggunakan cadangan hidrolokasi NLDI.",
+    "flowlineFallbackComid": "Garis aliran diplot menggunakan cadangan hidrolokasi NLDI; COMID {{comid}} siap untuk alur kerja daerah aliran.",
+    "requestFailed": "Permintaan NLDI gagal.",
+    "nothingToAdd": "Tidak ada fitur NLDI terplot yang bisa ditambahkan.",
+    "layersAdded_other": "Menambahkan {{count}} layer NLDI ke satu grup “Hasil USGS NLDI”.",
+    "layerGroupName": "Hasil USGS NLDI",
+    "layerFlowline": "Garis aliran NLDI",
+    "layerRaindrop": "Jalur tetesan hujan NLDI",
+    "layerSelectedPoint": "Titik terpilih NLDI",
+    "layerBasin": "Daerah aliran hulu NLDI",
+    "layerNavigation": "Navigasi NLDI {{index}}",
+    "resultCleared": "Hasil NLDI dibersihkan.",
+    "directionalUnavailable": "Penelusuran aliran berarah tidak tersedia selama proses USGS luring. Pilih “Garis aliran lengkap” atau coba lagi nanti.",
+    "noFlowlineNearby": "NLDI tidak menemukan garis aliran di dekat titik ini.",
+    "httpError": "USGS NLDI mengembalikan HTTP {{status}}",
+    "httpErrorDetail": "USGS NLDI mengembalikan HTTP {{status}}: {{detail}}",
+    "noAttributes": "Tidak ada atribut yang dikembalikan oleh NLDI.",
+    "catalogCaGages": "Stasiun duga air California (ca_gages)",
+    "catalogNwisSite": "Situs air permukaan NWIS (stasiun duga air)",
+    "catalogNwisGw": "Sumur air tanah NWIS",
+    "catalogGfv11Pois": "Titik USGS Geospatial Fabric",
+    "catalogHuc12pp": "Titik keluaran HUC12",
+    "catalogNmwdiSt": "Situs air New Mexico",
+    "catalogFlowlines": "Garis aliran NHDPlus"
   }
 }

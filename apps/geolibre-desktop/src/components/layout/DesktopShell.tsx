@@ -1,7 +1,7 @@
 // @refresh reset
 import { useAppStore, type GeoLibreLayer } from "@geolibre/core";
 import type { FeatureCollection } from "geojson";
-import type { MapController, MapDiagnosticEvent } from "@geolibre/map";
+import type { MapDiagnosticEvent, MapEngine } from "@geolibre/map";
 import { getLayerBounds, MapCanvas, setExternalDeckLayerOrderHandler } from "@geolibre/map";
 import { useTranslation } from "react-i18next";
 import {
@@ -76,6 +76,7 @@ import { openRightPanel } from "@geolibre/plugins";
 import { getIsMobileViewport } from "../../hooks/useIsMobileViewport";
 import { useProjectFileActions } from "../../hooks/useProjectFileActions";
 import { useProjectHistory } from "../../hooks/useProjectHistory";
+import { useScreenshotReadiness } from "../../hooks/useScreenshotReadiness";
 import {
   isRasterFileName,
   isGeoLibreProjectFileName,
@@ -131,6 +132,7 @@ import { useEmbedBridge } from "../../hooks/useEmbedBridge";
 import { useRasterIdentify } from "../../hooks/useRasterIdentify";
 import { useGlobalRasterIdentify } from "../../hooks/useGlobalRasterIdentify";
 import { useNetcdfIdentify } from "../../hooks/useNetcdfIdentify";
+import { useTerrainRestore } from "../../hooks/useTerrainRestore";
 import { useCogSpectralIdentify } from "../../hooks/useCogSpectralIdentify";
 import {
   useAutoCollapsedPanel,
@@ -158,6 +160,7 @@ import { MapContextMenu } from "./MapContextMenu";
 import { KnowledgeCardPanel, type KnowledgePlace } from "./KnowledgeCardPanel";
 import { KnowledgeCardConsentDialog } from "./KnowledgeCardConsentDialog";
 import { MapGrid } from "./MapGrid";
+import { PrimaryCesiumCanvas } from "./PrimaryCesiumCanvas";
 import { RemoteCursorsOverlay } from "./RemoteCursorsOverlay";
 import { useCommandBridge } from "../../hooks/useCommandBridge";
 import { useEmbedApi } from "../../hooks/useEmbedApi";
@@ -654,7 +657,7 @@ export function DesktopShell({
   // mid-drag still detaches the global listeners and restores document.body.
   const activeResizeCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => () => activeResizeCleanupRef.current?.(), []);
-  const mapControllerRef = useRef<MapController | null>(null);
+  const mapControllerRef = useRef<MapEngine | null>(null);
 
   // Frame layers a `?data=` deep link added. Single non-GeoJSON datasets move
   // the camera in their format-specific loader; a repeated `data` batch lists
@@ -930,7 +933,7 @@ export function DesktopShell({
   // the Collaborate dialog and the on-canvas status badge share one socket, and
   // so the dialog stays mounted in toolbar-hidden layouts.
   const collaboration = useCollaboration(mapControllerRef);
-  const commentTool = useCommentTool({ mapControllerRef, collaboration });
+  const commentTool = useCommentTool({ mapControllerRef, collaboration, mapReadyGeneration });
   const [showResolvedComments, setShowResolvedComments] = useState(false);
   const [selectedCommentId, setSelectedCommentId] = useState<string | null>(null);
   const collaborateDialogOpen = useAppStore((s) => s.ui.collaborateDialogOpen);
@@ -949,11 +952,11 @@ export function DesktopShell({
   useEmbedBridge(mapControllerRef);
   // Request/reply + event channel backing the Python scripting API (live
   // queries, processing, map events). Also inert when not embedded.
-  useCommandBridge(mapControllerRef);
+  useCommandBridge(mapControllerRef, mapReadyGeneration);
   // Runtime postMessage API for a third-party host page that frames the app
   // (fly to a record, highlight it, open a tool; selection/view/tool events back
   // out). Off unless the deployment configured GEOLIBRE_EMBED_ORIGINS.
-  useEmbedApi(mapControllerRef, mapAppAPI);
+  useEmbedApi(mapControllerRef, mapAppAPI, mapReadyGeneration);
   // Same scripting surface, reached over the desktop Jupyter server's relay, so
   // a kernel driven from an EXTERNAL client (VS Code's Jupyter extension) can
   // control the map too. Inert until that server is running.
@@ -963,6 +966,7 @@ export function DesktopShell({
   useRasterIdentify();
   useNetcdfIdentify(mapControllerRef, mapReadyGeneration);
   useCogSpectralIdentify(mapControllerRef, mapReadyGeneration);
+  useTerrainRestore(mapControllerRef, mapReadyGeneration, projectGeneration);
   const [layerPanelWidth, setLayerPanelWidth] = useState(initialSidePanelWidth);
   const [stylePanelWidth, setStylePanelWidth] = useState(initialSidePanelWidth);
   const [stylePanelOpenRequest, setStylePanelOpenRequest] = useState(0);
@@ -1251,13 +1255,54 @@ export function DesktopShell({
     // or the map is reinitialised (mapReadyGeneration), not on every
     // incremental plugin write-back. projectPlugins is read from the store
     // snapshot at call time so it is always current without being a dependency.
-    if (!externalPluginsReady || !mapReadyGeneration || !mapControllerRef.current) return;
+    // Restore compatible plugins for either renderer. Native MapLibre layer
+    // producers remain below their own capability gate.
+    const engine = mapControllerRef.current;
+    if (!externalPluginsReady || !mapReadyGeneration || !engine) return;
     const appAPI = createAppAPI(mapControllerRef);
     const pluginManager = getPluginManager();
     pluginManager.restoreProjectState(useAppStore.getState().projectPlugins, appAPI);
     // Immediately after the restore, so a project that persisted the geo-editor
     // as active cannot re-arm editing inside a read-only viewer embed.
     enforceViewerPlugins();
+    const search = window.location.search;
+    void pluginManager
+      .handleUrlParameters(new URLSearchParams(search), appAPI, `${projectGeneration}:${search}`)
+      // `handleUrlParameters` activates plugins asynchronously, so it can land
+      // after the synchronous pass above. No blocked plugin registers a URL
+      // handler today, but "every activation path is covered" is the whole
+      // point of the guard, so re-assert it once this settles rather than
+      // leaving the next one to notice.
+      .catch(console.error)
+      .finally(enforceViewerPlugins);
+    // The environment plugins have a branch for each renderer (#2287): the
+    // effects engine drives Cesium's sky box and atmosphere, the sun simulation
+    // its lighting and clock, the flight simulator its camera. They rebind the
+    // same way on both — a renderer swap rebuilds the engine, so the host
+    // re-attaches them exactly as it does after a MapLibre re-init.
+    //
+    // activeByDefault plugins are marked active without activate() being
+    // called, so the effects engine must be kicked explicitly to match the
+    // restored active state (idempotent).
+    restoreEffects(
+      appAPI,
+      pluginManager.isActive(EFFECTS_PLUGIN_ID),
+      useAppStore.getState().projectPlugins?.settings?.[EFFECTS_PLUGIN_ID],
+    );
+    // The sun simulation reads/writes native map layers, so it must re-bind to
+    // the (possibly new) map instance after a map re-init or basemap change.
+    // Reattach only — it must NOT derive open/closed state here, which would
+    // reset a locally-opened panel on an unrelated basemap swap or remote edit.
+    // Project loads open/close it via the plugin's applyProjectState (invoked by
+    // restoreProjectState above).
+    reattachSun(appAPI);
+    // The flight simulator holds a reference to the live map (and suspends its
+    // interaction handlers while flying), so rebind it after a map re-init too.
+    reattachFlightSimulator(appAPI);
+    if (!engine.capabilities.nativeMapInstance) {
+      void restoreLocalFileLayers();
+      return;
+    }
     restoreThreeDTilesLayers(appAPI);
     restoreRasterLayers(appAPI);
     restorePlanetaryComputerLayers(appAPI);
@@ -1284,28 +1329,10 @@ export function DesktopShell({
       if (applyStacSearchLayerOrder(layerId, beforeId)) return;
       applyRasterLayerOrder(layerId, beforeId);
     });
-    // activeByDefault plugins are marked active without activate() being
-    // called, so the effects engine must be kicked explicitly to match the
-    // restored active state (idempotent).
-    restoreEffects(
-      appAPI,
-      pluginManager.isActive(EFFECTS_PLUGIN_ID),
-      useAppStore.getState().projectPlugins?.settings?.[EFFECTS_PLUGIN_ID],
-    );
-    // The sun simulation reads/writes native map layers, so it must re-bind to
-    // the (possibly new) map instance after a map re-init or basemap change.
-    // Reattach only — it must NOT derive open/closed state here, which would
-    // reset a locally-opened panel on an unrelated basemap swap or remote edit.
-    // Project loads open/close it via the plugin's applyProjectState (invoked by
-    // restoreProjectState above).
-    reattachSun(appAPI);
-    // The route animation likewise owns native marker/trail layers, so rebind it
-    // to the (possibly new) map after a re-init/basemap swap without deriving
+    // The route animation owns native marker/trail layers, so rebind it to the
+    // (possibly new) map after a re-init/basemap swap without deriving
     // open/closed state (project loads handle that via applyProjectState).
     reattachRouteAnimation(appAPI);
-    // The flight simulator holds a reference to the live map (and suspends its
-    // interaction handlers while flying), so rebind it after a map re-init too.
-    reattachFlightSimulator(appAPI);
     // Rebind the directions tool to the (possibly new) map instance after a
     // map re-init, since restoreProjectState skips an already-active plugin.
     restoreDirections(appAPI, pluginManager.isActive(DIRECTIONS_PLUGIN_ID));
@@ -1321,16 +1348,6 @@ export function DesktopShell({
     // Same contract for the deck.gl overlay: re-attach it to the current map
     // and re-render any deckgl-viz layers a restored project carries.
     restoreDeckViz(appAPI, pluginManager.isActive(DECK_VIZ_PLUGIN_ID));
-    const search = window.location.search;
-    void pluginManager
-      .handleUrlParameters(new URLSearchParams(search), appAPI, `${projectGeneration}:${search}`)
-      // `handleUrlParameters` activates plugins asynchronously, so it can land
-      // after the synchronous pass above. No blocked plugin registers a URL
-      // handler today, but "every activation path is covered" is the whole
-      // point of the guard, so re-assert it once this settles rather than
-      // leaving the next one to notice.
-      .catch(console.error)
-      .finally(enforceViewerPlugins);
   }, [enforceViewerPlugins, externalPluginsReady, mapReadyGeneration, projectGeneration]);
 
   useEffect(() => {
@@ -1345,6 +1362,53 @@ export function DesktopShell({
     setMapReadyGeneration((generation) => generation + 1);
     onMapReady?.(createAppAPI(mapControllerRef));
   }, [onMapReady]);
+
+  /**
+   * Which engine draws the primary map area (issue #2217). `"cesium"` unmounts
+   * `MapCanvas` in favour of the globe, so no `MapController` exists while it is
+   * selected.
+   */
+  const primaryRenderer = useAppStore((s) => s.primaryRenderer);
+  const cesiumPrimary = primaryRenderer === "cesium";
+  useScreenshotReadiness(
+    mapControllerRef,
+    mapReadyGeneration,
+    externalPluginsReady,
+    projectUrlLoadState?.status === "loading" || dataUrlLoadState?.status === "loading",
+    projectUrlLoadState?.error ?? dataUrlLoadState?.error ?? null,
+    cesiumPrimary,
+  );
+  const setObjectDetectionOpen = useAppStore((s) => s.setObjectDetectionOpen);
+  const setSegmentEverythingOpen = useAppStore((s) => s.setSegmentEverythingOpen);
+  // Switching engines swaps which engine the shared ref points at: MapCanvas
+  // unmounts and clears it, then PrimaryCesiumCanvas publishes its CesiumEngine
+  // (and the reverse on the way back). The ref is no longer nulled wholesale
+  // here — that was necessary while only MapLibre implemented the surface, and
+  // it is what left every menu, panel, and shortcut pointing at nothing on the
+  // globe (#2260). Each canvas owns clearing its own engine on unmount, so the
+  // ref is never left aimed at a destroyed map.
+  //
+  // The MapLibre-only panels below still unmount with the 2D map, so any that
+  // were open are closed here. Without this their open flags survive on the
+  // globe and the panel springs back the moment the user returns to 2D, long
+  // after they meant to dismiss it (#2217 review).
+  useEffect(() => {
+    if (!cesiumPrimary) return;
+    // Bump the readiness generation on the hand-off. It is no longer *reset*
+    // (that is what left every consumer pointing at nothing on the globe), but
+    // the reset did do one useful thing: it forced the generation-gated effects
+    // — viewport history, the embed/notebook/command bridges — to re-run and
+    // detach their listeners from the outgoing MapLibre map. Without a bump
+    // they would not re-run until a new engine published, so a globe that never
+    // becomes ready would leave those closures holding a destroyed map for the
+    // session (#2268 review). Incrementing keeps that cleanup timing while the
+    // ref itself stays live.
+    setMapReadyGeneration((generation) => generation + 1);
+    setRasterSubsetLayer(null);
+    setBasemapExtractOpen(false);
+    setObjectDetectionOpen(false);
+    setSegmentEverythingOpen(false);
+  }, [cesiumPrimary, setObjectDetectionOpen, setSegmentEverythingOpen]);
 
   // Keep the on-map compass (reset pitch/bearing) control's tooltip translated.
   // Re-runs when the controller (re)initialises (mapReadyGeneration) and on
@@ -2547,82 +2611,105 @@ export function DesktopShell({
             fallbackClassName="h-full w-full"
           >
             <MapGrid>
-              <MapCanvas
-                canUseRemoteElevation={hasElevationConsent}
-                controllerRef={mapControllerRef}
-                identifyAllLabels={identifyAllLabels}
-                identifyRasterLayerAt={identifyRasterLayerAt}
-                onMapDiagnosticEvent={handleMapDiagnosticEvent}
-                onControllerReady={handleMapControllerReady}
-              />
-              <RemoteCursorsOverlay mapControllerRef={mapControllerRef} />
-              <CommentMapOverlay
-                mapControllerRef={mapControllerRef}
-                onSelectComment={(commentId) => {
-                  setSelectedCommentId(commentId);
-                  openRightPanel(COMMENTS_PANEL_ID);
-                }}
-                showResolved={showResolvedComments}
-              />
-              <MapContextMenu
-                mapControllerRef={mapControllerRef}
-                mapReadyGeneration={mapReadyGeneration}
-                onExplorePlace={handleExplorePlace}
-              />
-              <KnowledgeCardPanel
-                place={knowledgePlace}
-                lang={wikipediaLang(i18n.language)}
-                onClose={() => setKnowledgePlace(null)}
-                onFlyTo={handleKnowledgeFlyTo}
-              />
-              <BoundsRestrictionIndicator />
-              {/* Isolate the collaboration badge in its own boundary: it renders
+              {/* The primary map area is one renderer or the other (#2217).
+                  Everything below that takes `mapControllerRef` is MapLibre-only
+                  — it drives a `MapController` that the globe does not have — so
+                  it mounts with the 2D map and stays unmounted on the globe,
+                  where `PrimaryCesiumCanvas` explains the absence. Renderer-
+                  neutral, store-driven overlays sit outside the branch and are
+                  available under either engine. */}
+              {cesiumPrimary ? (
+                <PrimaryCesiumCanvas
+                  engineRef={mapControllerRef}
+                  onEngineReady={handleMapControllerReady}
+                />
+              ) : (
+                <>
+                  <MapCanvas
+                    canUseRemoteElevation={hasElevationConsent}
+                    controllerRef={mapControllerRef}
+                    identifyAllLabels={identifyAllLabels}
+                    identifyRasterLayerAt={identifyRasterLayerAt}
+                    onMapDiagnosticEvent={handleMapDiagnosticEvent}
+                    onControllerReady={handleMapControllerReady}
+                  />
+                  <RemoteCursorsOverlay mapControllerRef={mapControllerRef} />
+                  <CommentMapOverlay
+                    mapControllerRef={mapControllerRef}
+                    onSelectComment={(commentId) => {
+                      setSelectedCommentId(commentId);
+                      openRightPanel(COMMENTS_PANEL_ID);
+                    }}
+                    showResolved={showResolvedComments}
+                  />
+                  <MapContextMenu
+                    mapControllerRef={mapControllerRef}
+                    mapReadyGeneration={mapReadyGeneration}
+                    onExplorePlace={handleExplorePlace}
+                  />
+                  <KnowledgeCardPanel
+                    place={knowledgePlace}
+                    lang={wikipediaLang(i18n.language)}
+                    onClose={() => setKnowledgePlace(null)}
+                    onFlyTo={handleKnowledgeFlyTo}
+                  />
+                  {/* Isolate the collaboration badge in its own boundary: it renders
                   over the map, so a fault here must never take down the map
                   itself (it shares this subtree's error boundary otherwise). */}
-              <SilentErrorBoundary label="Collaboration status">
-                <CollaborationStatusBadge api={collaboration} mapControllerRef={mapControllerRef} />
-              </SilentErrorBoundary>
-              <MapModeBanner mapControllerRef={mapControllerRef} />
-              <QuickAnalysisBanner />
-              <PixelTimeSeriesControl mapControllerRef={mapControllerRef} />
-              <NetcdfSampleMarkers
-                mapControllerRef={mapControllerRef}
-                mapReadyGeneration={mapReadyGeneration}
-              />
-              <NetcdfProfileWindow />
-              {/* Its own boundary: the cube window builds a `WebGLRenderer`,
+                  <SilentErrorBoundary label="Collaboration status">
+                    <CollaborationStatusBadge
+                      api={collaboration}
+                      mapControllerRef={mapControllerRef}
+                    />
+                  </SilentErrorBoundary>
+                  <MapModeBanner mapControllerRef={mapControllerRef} />
+                  <PixelTimeSeriesControl mapControllerRef={mapControllerRef} />
+                  <NetcdfSampleMarkers
+                    mapControllerRef={mapControllerRef}
+                    mapReadyGeneration={mapReadyGeneration}
+                  />
+                  {/* Its own boundary: the cube window builds a `WebGLRenderer`,
                   whose constructor throws outright when the browser or driver
                   gives it no context. Sharing the map's boundary would turn a
                   failure to draw one panel into the loss of the whole map. */}
-              <SilentErrorBoundary label="NetCDF 3D cube">
-                <NetcdfCubeWindow mapControllerRef={mapControllerRef} />
-              </SilentErrorBoundary>
-              <NetcdfCubeSetupDialog mapControllerRef={mapControllerRef} />
-              <MapLegendPanel
-                mapControllerRef={mapControllerRef}
-                mapReadyGeneration={mapReadyGeneration}
-              />
+                  <SilentErrorBoundary label="NetCDF 3D cube">
+                    <NetcdfCubeWindow mapControllerRef={mapControllerRef} />
+                  </SilentErrorBoundary>
+                  <NetcdfCubeSetupDialog mapControllerRef={mapControllerRef} />
+                  <MapLegendPanel
+                    mapControllerRef={mapControllerRef}
+                    mapReadyGeneration={mapReadyGeneration}
+                  />
+                  <Suspense fallback={null}>
+                    <ObjectDetectionDialog mapControllerRef={mapControllerRef} />
+                  </Suspense>
+                  <Suspense fallback={null}>
+                    <SegmentEverythingPanel mapControllerRef={mapControllerRef} />
+                  </Suspense>
+                  <StoryMapComposeBar mapControllerRef={mapControllerRef} />
+                </>
+              )}
+              {/* Renderer-neutral: these read the store rather than a
+                  `MapController`, so they stay available on the 3D globe. */}
+              <TerrainSettingsDialog mapControllerRef={mapControllerRef} />
               <RasterSubsetPanel
                 layer={rasterSubsetLayer}
                 onClose={() => setRasterSubsetLayer(null)}
                 mapControllerRef={mapControllerRef}
+                mapReadyGeneration={mapReadyGeneration}
               />
               <BasemapExtractPanel
                 open={basemapExtractOpen}
                 onClose={() => setBasemapExtractOpen(false)}
                 mapControllerRef={mapControllerRef}
+                mapReadyGeneration={mapReadyGeneration}
               />
+              <BoundsRestrictionIndicator />
+              <QuickAnalysisBanner />
+              <NetcdfProfileWindow />
               <Suspense fallback={null}>
                 <StyleManagerPanel />
               </Suspense>
-              <Suspense fallback={null}>
-                <ObjectDetectionDialog mapControllerRef={mapControllerRef} />
-              </Suspense>
-              <Suspense fallback={null}>
-                <SegmentEverythingPanel mapControllerRef={mapControllerRef} />
-              </Suspense>
-              <TerrainSettingsDialog mapControllerRef={mapControllerRef} />
-              <StoryMapComposeBar mapControllerRef={mapControllerRef} />
             </MapGrid>
           </SectionErrorBoundary>
           <SectionErrorBoundary
@@ -2803,6 +2890,7 @@ export function DesktopShell({
               <NotebookPanel
                 onResizeStart={startNotebookPanelResize}
                 mapControllerRef={mapControllerRef}
+                mapReadyGeneration={mapReadyGeneration}
                 themeMode={themeMode}
               />
             </Suspense>

@@ -1,3 +1,10 @@
+export {
+  registerAssistantTool,
+  registerAssistantToolSpec,
+  listAssistantTools,
+  getAssistantToolsVersion,
+  unregisterAssistantToolsByOwner,
+} from "./assistant-tool-registry";
 export * from "./types";
 export { PluginManager } from "./plugin-manager";
 export {
@@ -67,6 +74,7 @@ export {
 } from "./plugins/maplibre-basemap-control";
 export {
   addArcGISLayer,
+  setArcGISFetch,
   fetchArcGISImageServiceRasterFunctions,
   fetchArcGISMapServiceSublayers,
   ARCGIS_FEATURE_SOURCE_KIND,
@@ -246,6 +254,7 @@ export {
   closeRasterLayerPanel,
   openRasterLayerPanel,
   restoreRasterLayers,
+  getRasterLoadState,
   readRasterPixel,
   setLocalRasterFileReader,
   setLocalRasterPicker,
@@ -256,6 +265,7 @@ export {
   type NonTiledRasterRequest,
   type PickedLocalRaster,
 } from "./plugins/maplibre-raster";
+export { getSharedDeckLoadState } from "./plugins/shared-deck-overlay";
 export {
   RASTER_MAX_CLASSES,
   RASTER_MAX_STORED_CLASSES,
@@ -266,7 +276,9 @@ export {
   type RasterSymbology,
   clampRasterClassCount,
   computeRasterBreaks,
+  customColorsForRasterClassEdit,
   defaultRasterSymbology,
+  normalizeRasterClassOpacities,
   savedRasterSymbology,
 } from "./plugins/raster-symbology";
 export { RASTER_SOURCE_KIND, getRasterBandStats } from "./plugins/raster-symbology-texture";
@@ -395,6 +407,24 @@ export {
   setAnnotationLabels,
   type AnnotationLabels,
 } from "./plugins/maplibre-annotations";
+export {
+  maplibreDimensionsPlugin,
+  DIMENSIONS_PLUGIN_ID,
+  DIMENSIONS_SOURCE_KIND,
+  DIMENSION_UNITS,
+  setDimensionLabels,
+  metersToUnit,
+  formatDistance,
+  formatAngle,
+  flattenFeatureVertices,
+  resolveTiePosition,
+  parseAssociativeDimension,
+  spliceRebuiltDimensionGroups,
+  type DimensionLabels,
+  type DimensionUnit,
+  type DimensionTie,
+  type ParsedAssociativeDimension,
+} from "./plugins/maplibre-dimensions";
 export { maplibreEnviroAtlasPlugin } from "./plugins/maplibre-enviroatlas";
 export { maplibreEsriWaybackPlugin } from "./plugins/maplibre-esri-wayback";
 export { maplibreFemaWmsPlugin } from "./plugins/maplibre-fema-wms";
@@ -615,7 +645,11 @@ export {
   maplibreElevationProfilePlugin,
   ELEVATION_PROFILE_PLUGIN_ID,
 } from "./plugins/elevation-profile";
-export { maplibreSwipePlugin, SWIPE_PLUGIN_ID } from "./plugins/maplibre-swipe";
+export {
+  maplibreSwipePlugin,
+  SWIPE_PLUGIN_ID,
+  getSwipeRasterLoadState,
+} from "./plugins/maplibre-swipe";
 export {
   maplibreGraticulePlugin,
   GRATICULE_PLUGIN_ID,

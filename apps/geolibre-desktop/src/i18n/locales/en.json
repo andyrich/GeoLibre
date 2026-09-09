@@ -276,6 +276,10 @@
         "label": "Add WMS Layer",
         "description": "Add a WMS GetMap service as a tiled raster layer."
       },
+      "csw": {
+        "label": "Search CSW Catalog",
+        "description": "Search an OGC Catalogue Service for datasets and add supported web resources to the map."
+      },
       "wfs": {
         "label": "Add WFS Layer",
         "description": "Add WFS features by requesting GeoJSON from a GetFeature service."
@@ -343,6 +347,10 @@
       "polyline": {
         "label": "Add Encoded Polyline Layer",
         "description": "Import encoded polyline strings (Google, OSRM, Valhalla) from text or files as vector lines."
+      },
+      "cesiumIon": {
+        "label": "Add Cesium Ion Asset",
+        "description": "Add a 3D Tiles tileset or imagery from Cesium Ion by asset id. Renders on the 3D globe with your Cesium Ion token."
       }
     },
     "shared": {
@@ -400,6 +408,18 @@
       "importedWithDropped_one": "Imported {{count}} service ({{dropped}} skipped — library full).",
       "importedWithDropped_other": "Imported {{count}} services ({{dropped}} skipped — library full)."
     },
+    "cesiumIon": {
+      "defaultName": "Cesium Ion asset",
+      "assetId": "Asset ID",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "Imagery",
+      "altitudeOffset": "Altitude offset (m)",
+      "quickPicks": "Quick picks",
+      "hint": "Find asset ids under My Assets at ion.cesium.com. The asset must be shared with the token configured in Settings.",
+      "errorAssetId": "Enter a Cesium Ion asset id (a positive whole number).",
+      "errorAltitude": "Enter the altitude offset as a number of metres.",
+      "tokenMissing": "No Cesium Ion token is configured. Add one in Settings → Environment variables (VITE_CESIUM_TOKEN) or the asset will fail to load."
+    },
     "xyz": {
       "defaultName": "XYZ Layer",
       "sampleLabel": "USGS imagery",
@@ -426,6 +446,21 @@
       "noLayersFound": "No layers were found for this service.",
       "retrieveError": "Could not retrieve layers from this service.",
       "version": "WMS version"
+    },
+    "csw": {
+      "defaultName": "CSW Catalog",
+      "urlPlaceholder": "https://example.com/csw",
+      "keyword": "Keyword",
+      "search": "Search",
+      "searching": "Searching...",
+      "results": "Catalog results",
+      "errorUrl": "Enter a valid HTTP or HTTPS CSW service URL.",
+      "searchError": "Could not search this catalog.",
+      "noResults": "No matching datasets were found.",
+      "invalidGeoJson": "The selected resource is not a GeoJSON FeatureCollection.",
+      "addError": "Could not add this catalog resource.",
+      "addResource": "Add {{kind}}",
+      "noSupportedResources": "No supported WMS, WFS, ArcGIS, or GeoJSON resource was advertised."
     },
     "wfs": {
       "defaultName": "WFS Layer",
@@ -624,6 +659,7 @@
       "errorRetrieveColumns": "Could not retrieve column names.",
       "url": "Delimited text URL",
       "file": "Delimited text file",
+      "fileFilter": "CSV / TSV / TXT / Excel",
       "urlPlaceholder": "https://example.com/data.csv",
       "retrieving": "Retrieving...",
       "retrieveColumns": "Retrieve columns",
@@ -892,7 +928,16 @@
       "cellSize": "Cell size",
       "lineWidth": "Line width",
       "extrusion": "3D extrusion",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "Choose local model",
+      "sampleDataset": "Sample dataset",
+      "sampleCustom": "Custom model",
+      "sampleAirplane": "Airplane — San Francisco",
+      "sampleShanghai": "Shanghai — central city",
+      "modelFileHint": "Choose a GLB or self-contained glTF file. Local models are embedded in saved projects, increasing the project size.",
+      "modelExternalResources": "This model references separate files. Export it as a GLB with embedded textures and buffers, then try again.",
+      "modelTooLarge": "This model is larger than the {{limit}} MB limit for embedding in a project. Host it and add it by URL instead.",
+      "modelFileError": "Could not read this model. Choose a valid glTF 2.0 or GLB file."
     },
     "nonGeographicCoordinates": "Coordinates in {{names}} are not longitude/latitude, so nothing will be drawn on the map. The CRS is mislabelled — reproject the data (or fix its .prj) and load it again."
   },
@@ -1848,7 +1893,22 @@
     "show3d": "Show map {{number}} as a 3D globe",
     "show2d": "Show map {{number}} as a 2D map",
     "only2d": "2D only",
+    "only3d": "3D only",
     "cesiumTokenHint": "Add a Cesium Ion token in Settings for terrain and Ion imagery"
+  },
+  "renderer": {
+    "basemap": "Basemap",
+    "imagery": "Imagery",
+    "projectBasemap": "Project basemap",
+    "layerUnsupported": "Not rendered by the 3D globe",
+    "layerCesiumOnly": "Rendered by the 3D globe only",
+    "resetView": "Reset view",
+    "scene3D": "3D globe",
+    "scene2D": "2D map",
+    "sceneColumbus": "Columbus view",
+    "fullscreenEnter": "Enter fullscreen",
+    "fullscreenExit": "Exit fullscreen",
+    "fullscreenUnavailable": "Fullscreen unavailable"
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "Copy coordinates to clipboard",
@@ -2437,6 +2497,7 @@
       "mbtiles": "MBTiles Layer",
       "xyz": "XYZ Layer",
       "wms": "WMS Layer",
+      "csw": "CSW Catalog",
       "wfs": "WFS Layer",
       "wmts": "WMTS Layer",
       "ogcFeatures": "OGC API - Features",
@@ -2445,6 +2506,7 @@
       "georss": "GeoRSS Layer",
       "video": "Video Layer",
       "deckglViz": "Deck.gl Layer",
+      "cesiumIon": "Cesium Ion Asset",
       "gltfModel": "3D Model (glTF)",
       "postgres": "PostgreSQL Layer",
       "iceberg": "Apache Iceberg Layer"
@@ -2700,6 +2762,9 @@
       "splitViewGrid2x3": "2 × 3 grid",
       "splitViewGrid3x3": "3 × 3 grid",
       "splitViewSync": "Sync views",
+      "renderingEngine": "Rendering engine",
+      "rendererMapLibre": "MapLibre",
+      "rendererCesium": "Cesium",
       "viewInGoogleMaps": "View in Google Maps",
       "viewInGoogleEarth": "View in Google Earth",
       "zoomIn": "Zoom In",
@@ -2902,6 +2967,7 @@
     },
     "plugin": {
       "maplibre-gl-annotations": "Annotations",
+      "maplibre-gl-dimensions": "Dimensions",
       "maplibre-gl-streetview": "Street View",
       "maplibre-gl-time-slider": "Time Slider",
       "geolibre-timelapse": "Timelapse",
@@ -3573,6 +3639,7 @@
     "search": "Search",
     "searchCurrentView": "Search the current map area",
     "enterKeyword": "Enter a keyword to begin.",
+    "viewUnavailable": "The current map area is unavailable; turn off the map-area filter to search.",
     "loadMore": "Load more",
     "searching": "Searching…",
     "loadingMore": "Loading more datasets…",
@@ -3971,6 +4038,28 @@
     "saveElement": "Save Element",
     "atPoint": "At Point",
     "pinnedToExtent": "Pinned to Extent"
+  },
+  "dimensions": {
+    "toolbar": "Dimension tools",
+    "layerName": "Dimensions",
+    "tools": {
+      "linear": "Linear dimension",
+      "angular": "Angular dimension"
+    },
+    "unit": "Unit",
+    "snap": "Snap to vertices",
+    "color": "Dimension color",
+    "width": "Line width",
+    "widthOptions": {
+      "thin": "Thin",
+      "medium": "Medium",
+      "thick": "Thick"
+    },
+    "deleteLast": "Delete last dimension",
+    "clearAll": "Clear all dimensions",
+    "newLayer": "New dimension layer",
+    "confirmClearAll_one": "Delete this dimension? This cannot be undone.",
+    "confirmClearAll_other": "Delete all {{count}} dimensions in this layer? This cannot be undone."
   },
   "pythonConsole": {
     "title": "Python Console",
@@ -4573,6 +4662,15 @@
                 "kilometers": "Kilometers",
                 "meters": "Meters",
                 "miles": "Miles"
+              }
+            },
+            "side": {
+              "label": "Buffer side",
+              "description": "Outside grows each feature, Inside shrinks it, and Both keeps the zone within the distance on either side of its boundary. Inside needs polygon input — a point or line has no interior to buffer into.",
+              "options": {
+                "outside": "Outside (grow)",
+                "inside": "Inside (shrink)",
+                "both": "Both sides"
               }
             }
           }
@@ -6489,7 +6587,6 @@
       "remove": "Remove join",
       "enabledTitle": "Apply this join",
       "missingLayer": "Join layer not found",
-      "noCandidates": "No other layer has an attribute table to join",
       "statsMatched": "{{matched}} of {{total}} features matched",
       "statsUnmatchedJoin_one": "{{count}} join row unmatched",
       "statsUnmatchedJoin_other": "{{count}} join rows unmatched"
@@ -6546,6 +6643,11 @@
       "offsetY": "Offset Y (em)",
       "rotation": "Rotation (°)",
       "maxWidth": "Wrap width (em)",
+      "numberFormat": "Format numbers",
+      "numberFormatHint": "Numeric values are labeled with thousands and decimal separators, e.g. {{sample}}. Text values are unchanged, and a label expression formats its own output.",
+      "numberDecimals": "Decimal places",
+      "numberLocale": "Separators",
+      "numberLocaleApp": "Match app language",
       "transform": "Letter case",
       "transformNone": "As entered",
       "transformUppercase": "UPPERCASE",
@@ -6699,6 +6801,7 @@
       "categories": "Categories",
       "classColor": "Class {{index}} color",
       "classColorPick": "Pick class {{index}} color from the screen",
+      "classOpacity": "Class {{index}} opacity",
       "classValue": "Class {{index}} value",
       "colorExpression": "Color expression",
       "applyStyleType": "Apply style type",
@@ -6708,6 +6811,8 @@
       "pointRendererClustered": "Clustered",
       "heatmapRadius": "Heatmap radius",
       "heatmapIntensity": "Heatmap intensity",
+      "heatmapWeightField": "Weight field",
+      "heatmapEqualWeight": "None (equal weight)",
       "clusterRadius": "Cluster radius (px)",
       "clusterMaxZoom": "Cluster max zoom",
       "strokeWidthUnit": "Stroke width unit",
@@ -6744,6 +6849,7 @@
     "mode2d": "2D",
     "mode3dExtrusion": "3D extrusion",
     "noControls": "Style controls are not available for this layer type yet.",
+    "tilesetSymbology": "Colors and filters apply to this tileset on the 3D globe.",
     "selectedLayerType": "Selected layer type: {{type}}",
     "footerDeck": "Changes apply live to DuckDB deck.gl layer styling.",
     "footerMaplibre": "Changes apply live to MapLibre paint properties.",
@@ -6844,6 +6950,7 @@
         "upcase": "Converts a string to upper case.",
         "downcase": "Converts a string to lower case.",
         "slice": "Returns a section of a string or array.",
+        "numberFormat": "Formats a number as text using a locale's thousands and decimal separators, with optional fixed decimal places.",
         "toNumber": "Converts a value to a number.",
         "toString": "Converts a value to a string.",
         "toBoolean": "Converts a value to true or false.",

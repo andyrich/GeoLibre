@@ -274,6 +274,10 @@
         "label": "WMS 레이어 추가",
         "description": "WMS GetMap 서비스를 타일형 래스터 레이어로 추가합니다."
       },
+      "csw": {
+        "label": "CSW 카탈로그 검색",
+        "description": "OGC 카탈로그 서비스에서 데이터셋을 검색하고 지원되는 웹 리소스를 지도에 추가합니다."
+      },
       "wfs": {
         "label": "WFS 레이어 추가",
         "description": "GetFeature 서비스에서 GeoJSON을 요청하여 WFS 피처를 추가합니다."
@@ -421,6 +425,21 @@
       "noLayersFound": "이 서비스에서 레이어를 찾을 수 없습니다.",
       "retrieveError": "이 서비스에서 레이어를 조회할 수 없습니다.",
       "version": "WMS 버전"
+    },
+    "csw": {
+      "defaultName": "CSW 카탈로그",
+      "urlPlaceholder": "https://example.com/csw",
+      "keyword": "키워드",
+      "search": "검색",
+      "searching": "검색 중…",
+      "results": "카탈로그 결과",
+      "errorUrl": "유효한 HTTP 또는 HTTPS CSW 서비스 URL을 입력하세요.",
+      "searchError": "이 카탈로그를 검색할 수 없습니다.",
+      "noResults": "일치하는 데이터셋을 찾을 수 없습니다.",
+      "invalidGeoJson": "선택한 리소스는 GeoJSON FeatureCollection이 아닙니다.",
+      "addError": "이 카탈로그 리소스를 추가할 수 없습니다.",
+      "addResource": "{{kind}} 추가",
+      "noSupportedResources": "지원되는 WMS, WFS, ArcGIS 또는 GeoJSON 리소스가 제공되지 않았습니다."
     },
     "wfs": {
       "defaultName": "WFS 레이어",
@@ -615,6 +634,7 @@
       "errorRetrieveColumns": "열 이름을 조회할 수 없습니다.",
       "url": "구분 텍스트 URL",
       "file": "구분 텍스트 파일",
+      "fileFilter": "CSV / TSV / TXT / Excel",
       "urlPlaceholder": "https://example.com/data.csv",
       "retrieving": "조회하는 중...",
       "retrieveColumns": "열 조회",
@@ -1805,6 +1825,19 @@
     "only2d": "2D만",
     "cesiumTokenHint": "지형과 Ion 영상을 사용하려면 설정에서 Cesium Ion 토큰을 추가하세요"
   },
+  "renderer": {
+    "basemap": "배경지도",
+    "imagery": "영상",
+    "projectBasemap": "프로젝트 배경지도",
+    "layerUnsupported": "3D 지구본에서는 렌더링되지 않음",
+    "resetView": "보기 재설정",
+    "scene3D": "3D 지구본",
+    "scene2D": "2D 지도",
+    "sceneColumbus": "콜럼버스 뷰",
+    "fullscreenEnter": "전체 화면",
+    "fullscreenExit": "전체 화면 종료",
+    "fullscreenUnavailable": "전체 화면을 사용할 수 없음"
+  },
   "mapContextMenu": {
     "copyCoordinatesHint": "좌표를 클립보드에 복사",
     "quickActions": "빠른 작업",
@@ -2390,6 +2423,7 @@
       "mbtiles": "MBTiles 레이어",
       "xyz": "XYZ 레이어",
       "wms": "WMS 레이어",
+      "csw": "CSW 카탈로그",
       "wfs": "WFS 레이어",
       "wmts": "WMTS 레이어",
       "ogcFeatures": "OGC API - Features",
@@ -2653,6 +2687,9 @@
       "splitViewGrid2x3": "2 × 3 격자",
       "splitViewGrid3x3": "3 × 3 격자",
       "splitViewSync": "보기 동기화",
+      "renderingEngine": "렌더링 엔진",
+      "rendererMapLibre": "MapLibre",
+      "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Google 지도에서 보기",
       "viewInGoogleEarth": "Google Earth에서 보기",
       "zoomIn": "확대",
@@ -2852,6 +2889,7 @@
     },
     "plugin": {
       "maplibre-gl-annotations": "주석",
+      "maplibre-gl-dimensions": "치수",
       "maplibre-gl-streetview": "거리 뷰",
       "maplibre-gl-time-slider": "시간 슬라이더",
       "geolibre-timelapse": "타임랩스",
@@ -3451,6 +3489,7 @@
     "search": "검색",
     "searchCurrentView": "현재 지도 영역 검색",
     "enterKeyword": "시작하려면 키워드를 입력하세요.",
+    "viewUnavailable": "현재 지도 범위를 사용할 수 없습니다. 검색하려면 지도 범위 필터를 끄세요.",
     "loadMore": "더 불러오기",
     "searching": "검색 중…",
     "loadingMore": "데이터셋을 더 불러오는 중…",
@@ -3843,6 +3882,27 @@
     "saveElement": "요소 저장",
     "atPoint": "지점에 고정",
     "pinnedToExtent": "범위에 고정"
+  },
+  "dimensions": {
+    "toolbar": "치수 도구",
+    "layerName": "치수",
+    "tools": {
+      "linear": "선형 치수",
+      "angular": "각도 치수"
+    },
+    "unit": "단위",
+    "snap": "정점에 스냅",
+    "color": "치수 색상",
+    "width": "선 두께",
+    "widthOptions": {
+      "thin": "얇게",
+      "medium": "보통",
+      "thick": "굵게"
+    },
+    "deleteLast": "마지막 치수 삭제",
+    "clearAll": "모든 치수 지우기",
+    "newLayer": "새 치수 레이어",
+    "confirmClearAll_other": "이 레이어의 치수 {{count}}개를 모두 삭제할까요? 이 작업은 되돌릴 수 없습니다."
   },
   "pythonConsole": {
     "title": "Python 콘솔",
@@ -4438,6 +4498,15 @@
                 "kilometers": "킬로미터",
                 "meters": "미터",
                 "miles": "마일"
+              }
+            },
+            "side": {
+              "label": "버퍼 방향",
+              "description": "외부는 각 피처를 확장하고, 내부는 축소하며, 양쪽은 경계 양쪽으로 지정한 거리 이내의 영역만 남깁니다. 내부는 폴리곤 레이어가 필요합니다 — 포인트나 라인에는 내부 영역이 없습니다.",
+              "options": {
+                "outside": "외부 (확장)",
+                "inside": "내부 (축소)",
+                "both": "양쪽"
               }
             }
           }
@@ -6349,7 +6418,6 @@
       "remove": "조인 제거",
       "enabledTitle": "이 조인 적용",
       "missingLayer": "조인 레이어를 찾을 수 없음",
-      "noCandidates": "조인할 속성 테이블이 있는 다른 레이어가 없습니다",
       "statsMatched": "{{total}}개 중 {{matched}}개 피처 일치",
       "statsUnmatchedJoin_other": "일치하지 않은 테이블 행 {{count}}개"
     },
@@ -6404,6 +6472,11 @@
       "offsetY": "오프셋 Y(em)",
       "rotation": "회전(°)",
       "maxWidth": "줄바꿈 너비(em)",
+      "numberFormat": "숫자 서식 지정",
+      "numberFormatHint": "숫자 값은 천 단위 구분 기호와 소수점으로 표시됩니다(예: {{sample}}). 문자열 값은 그대로 유지되며, 라벨 표현식은 자체 출력 서식을 지정합니다.",
+      "numberDecimals": "소수 자릿수",
+      "numberLocale": "구분 기호",
+      "numberLocaleApp": "앱 언어 따르기",
       "transform": "문자 대소문자",
       "transformNone": "입력한 그대로",
       "transformUppercase": "대문자",
@@ -6557,6 +6630,7 @@
       "categories": "카테고리",
       "classColor": "클래스 {{index}} 색상",
       "classColorPick": "화면에서 클래스 {{index}} 색상 선택",
+      "classOpacity": "클래스 {{index}} 불투명도",
       "classValue": "클래스 {{index}} 값",
       "colorExpression": "색상 표현식",
       "applyStyleType": "스타일 유형 적용",
@@ -6566,6 +6640,8 @@
       "pointRendererClustered": "클러스터링",
       "heatmapRadius": "히트맵 반경",
       "heatmapIntensity": "히트맵 강도",
+      "heatmapWeightField": "가중치 필드",
+      "heatmapEqualWeight": "없음 (동일 가중치)",
       "clusterRadius": "클러스터 반경(px)",
       "clusterMaxZoom": "클러스터 최대 줌",
       "strokeWidthUnit": "선 너비 단위",
@@ -6602,6 +6678,7 @@
     "mode2d": "2D",
     "mode3dExtrusion": "3D 돌출",
     "noControls": "이 레이어 유형에서는 아직 스타일 컨트롤을 사용할 수 없습니다.",
+    "tilesetSymbology": "색상과 필터는 3D 지구본의 이 타일셋에 적용됩니다.",
     "selectedLayerType": "선택한 레이어 유형: {{type}}",
     "footerDeck": "변경 사항은 DuckDB deck.gl 레이어 스타일에 즉시 적용됩니다.",
     "footerMaplibre": "변경 사항은 MapLibre 페인트 속성에 즉시 적용됩니다.",
@@ -6702,6 +6779,7 @@
         "upcase": "문자열을 대문자로 변환합니다.",
         "downcase": "문자열을 소문자로 변환합니다.",
         "slice": "문자열 또는 배열의 일부를 반환합니다.",
+        "numberFormat": "로캘의 천 단위 및 소수점 구분 기호를 사용해 숫자를 텍스트로 변환하며, 고정 소수 자릿수를 지정할 수 있습니다.",
         "toNumber": "값을 숫자로 변환합니다.",
         "toString": "값을 문자열로 변환합니다.",
         "toBoolean": "값을 참 또는 거짓으로 변환합니다.",
@@ -7646,5 +7724,65 @@
       "downloadsStarted": "{{started}}개의 다운로드를 시작했습니다. {{failed}}개가 실패했습니다.",
       "downloadCancelled": "다운로드가 취소되었거나 실패했습니다."
     }
+  },
+  "usgsNldi": {
+    "panelTitle": "USGS NLDI",
+    "title": "USGS NLDI 수계 네트워크 도구",
+    "hint": "먼저 유로 방향을 선택하고 지도를 클릭하세요. 그런 다음 탐색 방향을 선택하고 강조된 버튼을 눌러 사용 가능한 카탈로그를 불러온 뒤, 수위관측소나 관정 같은 카탈로그를 선택하고 버튼을 다시 눌러 해당 카탈로그를 표시하세요.",
+    "directionComplete": "전체 유로 — 전체 NHD 구간을 반환합니다",
+    "directionUp": "상류만 — 지점보다 위쪽 구간을 반환합니다",
+    "directionDown": "하류만 — 지점보다 아래쪽 구간을 반환합니다",
+    "basinButton": "수문 위치로 유역 산출",
+    "navigationPlaceholder": "방향 선택 — 표시하기 전에 필요합니다",
+    "navigationUpstreamMain": "상류 본류 — 주 하도를 따라갑니다",
+    "navigationUpstreamTributaries": "상류 지류 — 유입되는 지천을 찾습니다",
+    "navigationDownstreamMain": "하류 본류 — 주 하도를 따라갑니다",
+    "navigationDownstreamDiversions": "하류 분류 — 갈라지는 흐름 경로를 따라갑니다",
+    "sourcePlaceholder": "먼저 ‘소스 불러오기 및 표시’를 누르세요",
+    "distancePlaceholder": "거리(km)",
+    "navigationButton": "1. 소스 불러오기 및 탐색 표시",
+    "navigationButtonAgain": "다른 탐색 레이어 표시",
+    "exportButton": "표시된 결과를 GeoJSON으로 내보내기",
+    "addLayersButton": "표시된 결과를 GeoLibre 레이어에 추가",
+    "clearButton": "NLDI 결과 지우기",
+    "noComid": "이 지점에 대한 COMID가 반환되지 않았습니다.",
+    "requestingBasin": "상류 유역을 요청하는 중…",
+    "basinRendered": "COMID {{comid}}의 상류 유역을 표시했습니다.",
+    "basinFailed": "유역 요청에 실패했습니다.",
+    "selectNavigation": "지점을 추적한 후 탐색 방법을 선택하세요.",
+    "invalidDistance": "거리는 1~9999km 사이여야 합니다.",
+    "discoveringSources": "NLDI 탐색 소스를 확인하는 중…",
+    "navigationUnavailable": "해당 탐색 방법은 이 COMID에서 사용할 수 없습니다.",
+    "noPlottableSource": "NLDI가 표시 가능한 탐색 소스를 반환하지 않았습니다.",
+    "navigationEmpty": "{{source}}이(가) 이 탐색에 대해 지도로 표현할 수 있는 피처를 반환하지 않았습니다.",
+    "navigationAdded": "COMID {{comid}}에 대해 {{navigation}}을(를) 통해 {{source}}을(를) 추가했습니다({{km}} km). 기존 탐색 레이어는 지도에 그대로 남습니다.",
+    "navigationFailed": "탐색 요청에 실패했습니다.",
+    "tracing": "가장 가까운 NHD 유로까지 추적하는 중…",
+    "flowline": "유로를 표시했습니다.",
+    "flowlineComid": "유로를 표시했습니다. COMID {{comid}}는 유역 워크플로에 사용할 수 있습니다.",
+    "flowlineFallback": "NLDI 수문 위치 대체 방식으로 유로를 표시했습니다.",
+    "flowlineFallbackComid": "NLDI 수문 위치 대체 방식으로 유로를 표시했습니다. COMID {{comid}}는 유역 워크플로에 사용할 수 있습니다.",
+    "requestFailed": "NLDI 요청에 실패했습니다.",
+    "nothingToAdd": "추가할 수 있는 표시된 NLDI 피처가 없습니다.",
+    "layersAdded_other": "NLDI 레이어 {{count}}개를 하나의 ‘USGS NLDI 결과’ 그룹에 추가했습니다.",
+    "layerGroupName": "USGS NLDI 결과",
+    "layerFlowline": "NLDI 유로",
+    "layerRaindrop": "NLDI 빗방울 경로",
+    "layerSelectedPoint": "NLDI 선택 지점",
+    "layerBasin": "NLDI 상류 유역",
+    "layerNavigation": "NLDI 탐색 {{index}}",
+    "resultCleared": "NLDI 결과를 지웠습니다.",
+    "directionalUnavailable": "USGS 프로세스가 오프라인인 동안에는 방향성 흐름 추적을 사용할 수 없습니다. ‘전체 유로’를 선택하거나 나중에 다시 시도하세요.",
+    "noFlowlineNearby": "NLDI가 이 지점 근처에서 유로를 찾지 못했습니다.",
+    "httpError": "USGS NLDI가 HTTP {{status}}을(를) 반환했습니다",
+    "httpErrorDetail": "USGS NLDI가 HTTP {{status}}을(를) 반환했습니다: {{detail}}",
+    "noAttributes": "NLDI가 속성을 반환하지 않았습니다.",
+    "catalogCaGages": "캘리포니아 수위관측소(ca_gages)",
+    "catalogNwisSite": "NWIS 지표수 관측지점(수위관측소)",
+    "catalogNwisGw": "NWIS 지하수 관정",
+    "catalogGfv11Pois": "USGS Geospatial Fabric 지점",
+    "catalogHuc12pp": "HUC12 유출점",
+    "catalogNmwdiSt": "뉴멕시코 수문 관측지점",
+    "catalogFlowlines": "NHDPlus 유로"
   }
 }
