@@ -52,6 +52,7 @@ import {
   setGeohashLabels,
   setTilecodeLabels,
   setUsgsNldiLabels,
+  setUsgsDemLabels,
   setMapillaryLabels,
   setEarthdataGisLabels,
   setOpenAerialMapLabels,
@@ -952,6 +953,9 @@ export function TopToolbar({
         "nmwdi-st": t("usgsNldi.catalogNmwdiSt"),
         flowlines: t("usgsNldi.catalogFlowlines"),
       },
+    });
+    setUsgsDemLabels({
+      title: t("toolbar.plugin.maplibre-gl-usgs-dem"),
     });
     setTilecodeLabels({
       title: t("tilecodePlugin.title"),

@@ -10,6 +10,15 @@ from .authoring import (
     save_project,
 )
 from .dash_component import DashMap
+from .dem import (
+    dem_items_to_geojson,
+    download_usgs_dem,
+    download_usgs_dems,
+    extract_raw_dem_name,
+    filter_redundant_dem_records,
+    get_24k_quad_bbox,
+    search_usgs_dem,
+)
 from .geolibre import Feature, Layer, Map
 from .legends import builtin_legend_names
 from .polyline import decode_polyline, encode_polyline, polyline_to_geojson, unescape_polyline
@@ -36,11 +45,18 @@ __all__ = [
     "builtin_legend_names",
     "color_ramp_names",
     "decode_polyline",
+    "dem_items_to_geojson",
     "describe_project",
+    "download_usgs_dem",
+    "download_usgs_dems",
     "encode_polyline",
+    "extract_raw_dem_name",
+    "filter_redundant_dem_records",
+    "get_24k_quad_bbox",
     "load_project",
     "polyline_to_geojson",
     "save_project",
+    "search_usgs_dem",
     "unescape_polyline",
 ]
 

@@ -2183,6 +2183,64 @@ class Map(anywidget.AnyWidget):
             )
         )
 
+    def add_usgs_dem(
+        self,
+        dem: Any,
+        name: str | None = None,
+        *,
+        colormap: str | None = "terrain",
+        rescale: list[list[float]] | None = None,
+        **style: Any,
+    ) -> str:
+        """Add a USGS Digital Elevation Model (DEM) to the map display.
+
+        Args:
+            dem: A DEM metadata dict from :func:`geolibre.dem.search_usgs_dem`,
+                a download URL string, or a local file path.
+            name: Optional layer name. Defaults to the DEM's title.
+            colormap: Colormap for single-band rendering (defaults to "terrain").
+            rescale: Optional [[min, max]] range.
+            **style: Additional layer style options.
+
+        Returns:
+            The id of the added layer.
+        """
+        if isinstance(dem, Mapping):
+            url = str(dem.get("downloadUrl") or dem.get("downloadURL") or "")
+            if not name:
+                name = str(dem.get("title") or "USGS DEM")
+        else:
+            url = str(dem)
+            if not name:
+                name = "USGS DEM"
+
+        return self.add_cog(url, name=name, colormap=colormap, rescale=rescale, **style)
+
+    def add_usgs_dem_footprints(
+        self,
+        dems: Sequence[Mapping[str, Any]],
+        name: str = "USGS DEM Footprints",
+        **style: Any,
+    ) -> str:
+        """Add GeoJSON bounding box footprints for USGS DEM search results.
+
+        Args:
+            dems: List of DEM metadata dictionaries.
+            name: Layer name.
+            **style: GeoJSON style options.
+
+        Returns:
+            The id of the added vector layer.
+        """
+        from .dem import dem_items_to_geojson
+
+        fc = dem_items_to_geojson(dems)
+        style.setdefault("fillColor", "#059669")
+        style.setdefault("fillOpacity", 0.15)
+        style.setdefault("color", "#059669")
+        style.setdefault("width", 1.5)
+        return self.add_geojson(fc, name=name, **style)
+
     def add_raster(
         self,
         source: Any = None,

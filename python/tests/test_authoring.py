@@ -7,6 +7,7 @@ on, so they run without the ``mcp`` SDK, a browser, or the bundled app.
 from __future__ import annotations
 
 import json
+import os
 
 import pytest
 
@@ -64,6 +65,7 @@ def test_save_project_leaves_no_temporary_file_behind(proj, tmp_path):
     assert [path.name for path in tmp_path.iterdir()] == ["map.geolibre.json"]
 
 
+@pytest.mark.skipif(os.name == "nt", reason="POSIX permissions not supported on Windows")
 def test_save_project_preserves_the_destination_mode(proj, tmp_path):
     """Re-saving must not narrow a project the user made group/world readable."""
     out = tmp_path / "map.geolibre.json"
