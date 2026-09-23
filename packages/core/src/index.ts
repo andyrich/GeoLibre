@@ -21,6 +21,7 @@ export * from "./popup";
 export * from "./joins";
 export * from "./virtual-fields";
 export * from "./quick-filters";
+export * from "./layer-filters";
 export * from "./capabilities";
 export * from "./deployment-capabilities";
 export * from "./selection";
@@ -129,6 +130,7 @@ export {
   type ReverseGeocodeDisplay,
 } from "./geocoding";
 export {
+  getArcgisApiKey,
   getBuildEnvironment,
   getCesiumIonToken,
   getGoogleMapsApiKey,
@@ -144,6 +146,7 @@ export {
   CESIUM_ION_SOURCE_KIND,
   CESIUM_OSM_BUILDINGS_ASSET_ID,
   CESIUM_BING_AERIAL_ASSET_ID,
+  CESIUM_GOOGLE_PHOTOREALISTIC_ASSET_ID,
   cesiumIonAssetId,
   cesiumIonAssetKind,
   createCesiumIonLayer,
@@ -151,8 +154,22 @@ export {
   isCesiumOnlyLayer,
   parseCesiumIonAssetId,
   type CesiumIonAssetKind,
+  type CesiumIonQuickPick,
+  type CesiumIonQuickPickGroup,
   type CesiumIonLayerOptions,
 } from "./cesium-ion";
+export {
+  CZML_QUICK_PICKS,
+  CZML_SOURCE_KIND,
+  createCzmlLayer,
+  czmlSource,
+  isCzmlLayer,
+  parseCzml,
+  type CzmlDocument,
+  type CzmlLayerOptions,
+  type CzmlPacket,
+  type CzmlSource,
+} from "./czml";
 export {
   GOOGLE_MAPS_API_KEY_HEADER,
   googleMapsApiKeyHeaderValue,
@@ -179,3 +196,11 @@ export {
   readStoredAuthorName,
   setStoredAuthorName,
 } from "./editor-identity";
+export {
+  CESIUM_KML_SOURCE_KIND,
+  isCesiumKmlLayer,
+  cesiumKmlSource,
+  createCesiumKmlLayer,
+  type CesiumKmlLayerOptions,
+} from "./cesium-kml";
+export { localFileName, uniqueImportedLayerName } from "./file-name";

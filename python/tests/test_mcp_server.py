@@ -444,6 +444,11 @@ def test_add_raster_layer_records_its_source(server, project_path):
         ("add_3d_tiles_layer", {"ion_asset_id": 96188}, "3d-tiles"),
         ("add_cesium_ion_layer", {"asset_id": 96188}, "3d-tiles"),
         ("add_cesium_ion_layer", {"asset_id": 2, "kind": "imagery"}, "raster"),
+        ("add_cesium_kml_layer", {"url": "https://example.com/landmarks.kmz"}, "3d-tiles"),
+        ("add_cesium_kml_layer", {"data": "<kml><Document/></kml>"}, "3d-tiles"),
+        ("add_czml_layer", {"url": "https://example.com/sat.czml"}, "3d-tiles"),
+        ("add_czml_layer", {"data": [{"id": "document", "version": "1.0"}]}, "3d-tiles"),
+        ("add_czml_layer", {"data": {"id": "document", "version": "1.0"}}, "3d-tiles"),
         (
             "add_tiles_layer",
             {"url": "https://example.com/a.pmtiles", "kind": "pmtiles"},
@@ -486,6 +491,20 @@ def test_cesium_ion_tools_persist_the_asset_id(server, project_path, tmp_path):
     assert [layer["source"]["ionAssetId"] for layer in saved["layers"]] == [96188, 96188, 2]
     assert [layer["type"] for layer in saved["layers"]] == ["3d-tiles", "3d-tiles", "raster"]
     assert {layer["metadata"]["sourceKind"] for layer in saved["layers"]} == {"cesium-ion"}
+
+
+def test_czml_tool_persists_the_document(server, project_path, tmp_path):
+    """The globe loads CZML from `source.czmlData` / `source.url`, so both must survive the save."""
+    packets = [{"id": "document", "version": "1.0"}, {"id": "sat", "point": {"pixelSize": 8}}]
+    call(server, "add_czml_layer", path=project_path, name="A", url="https://example.com/a.czml")
+    call(server, "add_czml_layer", path=project_path, name="B", data=packets)
+    saved = json.loads((tmp_path / project_path).read_text())
+    assert saved["layers"][0]["source"]["url"] == "https://example.com/a.czml"
+    assert saved["layers"][1]["source"]["czmlData"] == packets
+    assert {layer["metadata"]["sourceKind"] for layer in saved["layers"]} == {"czml"}
+    assert "url or non-empty data" in call_error(
+        server, "add_czml_layer", path=project_path, name="C"
+    )
 
 
 def test_add_vector_layer_rejects_an_undocumented_render_mode(server, project_path):
@@ -536,6 +555,21 @@ def test_set_layer_popup_writes_fields_labels_and_kinds(server, project_path):
             },
         ],
     }
+
+
+def test_set_layer_popup_records_the_popup_and_image_sizes(server, project_path):
+    call(server, "add_geojson_layer", path=project_path, name="Cities", data=json.dumps(POINT_FC))
+    result = call(
+        server,
+        "set_layer_popup",
+        path=project_path,
+        layer="Cities",
+        fields=[{"field": "photo", "kind": "image"}],
+        max_width=480,
+        image_height=320,
+    )
+    assert result["popup"]["maxWidth"] == 480
+    assert result["popup"]["imageHeight"] == 320
 
 
 def test_set_layer_popup_tooltip_flags_the_named_fields(server, project_path):
@@ -684,6 +718,46 @@ def test_add_ogc_layer_passes_bounds_through(server, project_path, tmp_path, ser
     )
     written = json.loads((tmp_path / project_path).read_text(encoding="utf-8"))
     assert written["layers"][-1]["source"]["bounds"] == [8.14, 38.85, 9.83, 41.31]
+
+
+def test_add_ogc_layer_passes_crs_through(server, project_path, tmp_path):
+    call(
+        server,
+        "add_ogc_layer",
+        path=project_path,
+        name="Cadastre",
+        service="wms",
+        endpoint="https://example.com/wms",
+        layers="CP.CadastralParcel",
+        crs="EPSG:6706",
+    )
+    written = json.loads((tmp_path / project_path).read_text(encoding="utf-8"))
+    assert "SRS=EPSG%3A6706" in written["layers"][-1]["source"]["tiles"][0]
+
+
+def test_add_ogc_layer_rejects_an_unsupported_crs(server, project_path):
+    assert "crs must be one of" in call_error(
+        server,
+        "add_ogc_layer",
+        path=project_path,
+        name="Cadastre",
+        service="wms",
+        endpoint="https://example.com/wms",
+        layers="CP.CadastralParcel",
+        crs="EPSG:25833",
+    )
+
+
+def test_add_ogc_layer_rejects_crs_for_wmts(server, project_path):
+    assert "applies only to service='wms'" in call_error(
+        server,
+        "add_ogc_layer",
+        path=project_path,
+        name="Tiles",
+        service="wmts",
+        endpoint="https://example.com/wmts/{z}/{y}/{x}.png",
+        crs="EPSG:4326",
+    )
 
 
 def test_add_ogc_layer_rejects_an_unknown_service(server, project_path):

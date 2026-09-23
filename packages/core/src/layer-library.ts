@@ -58,8 +58,9 @@ export const MAX_LAYER_LIBRARY_ENTRIES = 500;
  * Metadata keys dropped when capturing an entry. `resolvedUrl` is the dev-server
  * proxy rewrite of an XYZ template — a per-session artifact that must not be
  * baked into a saved source (the same reason `prepareLayerForSave` strips it).
+ * `geometryEdited` tracks changes to the live layer, not a library source.
  */
-const TRANSIENT_METADATA_KEYS = ["resolvedUrl"] as const;
+const TRANSIENT_METADATA_KEYS = ["resolvedUrl", "geometryEdited"] as const;
 
 function nonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim() !== "";
@@ -204,6 +205,12 @@ function sourceForCapture(layer: GeoLibreLayer): Record<string, unknown> {
       ? source.url
       : null;
   if (!originalUrl) return source;
+  // A TileJSON layer keeps its own tile templates — see `prepareLayerForSave`.
+  // The library re-adds a captured source verbatim, with no re-resolution step,
+  // so collapsing `tiles` onto the document URL here would never load a tile.
+  if (typeof (layer.metadata ?? {}).tilejsonUrl === "string") {
+    return { ...source, url: originalUrl };
+  }
   return { ...source, tiles: [originalUrl], url: originalUrl };
 }
 

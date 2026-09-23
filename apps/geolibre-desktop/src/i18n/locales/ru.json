@@ -22,6 +22,7 @@
     "noMatches": "Совпадений нет.",
     "addFailed": "Не удалось добавить этот источник данных.",
     "builtinBadge": "встроенный",
+    "configBadge": "конфиг",
     "newConnection": "Новое подключение {{kind}}",
     "loadingTables": "Загрузка таблиц…",
     "files": "Файлы",
@@ -351,6 +352,22 @@
       "polyline": {
         "label": "Добавить слой закодированной полилинии",
         "description": "Импорт закодированных строк полилиний (Google, OSRM, Valhalla) из текста или файлов в виде векторных линий."
+      },
+      "cesiumIon": {
+        "label": "Добавить ресурс Cesium Ion",
+        "description": "Добавьте набор тайлов 3D Tiles или изображения из Cesium Ion по id ресурса. Отображается на 3D-глобусе с вашим токеном Cesium Ion."
+      },
+      "czml": {
+        "label": "Добавить динамический 3D-слой CZML",
+        "description": "Загрузите динамический документ Cesium Language (CZML), описывающий орбиты, траектории, маршруты транспорта и меняющиеся во времени 3D-сцены на глобусе."
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "Загрузите KML или KMZ на глобус с исходными стилями, наложениями и сетевыми ссылками."
+      },
+      "wcs": {
+        "description": "Загрузить числовой фрагмент GeoTIFF из сервиса WCS 1.0.0.",
+        "label": "Слой WCS"
       }
     },
     "shared": {
@@ -390,6 +407,7 @@
       "loadAria": "Загрузить сохранённый сервис",
       "loadPlaceholder": "Загрузить сохранённый сервис…",
       "builtin": "{{name}} (встроенный)",
+      "config": "{{name}} (конфиг)",
       "deleteAria": "Удалить сохранённый сервис",
       "empty": "Пока нет сохранённых сервисов — заполните форму и нажмите «Сохранить текущий».",
       "name": "Имя",
@@ -411,6 +429,41 @@
       "importedWithDropped_few": "Импортировано {{count}} сервиса ({{dropped}} пропущено — библиотека заполнена).",
       "importedWithDropped_many": "Импортировано {{count}} сервисов ({{dropped}} пропущено — библиотека заполнена).",
       "importedWithDropped_other": "Импортировано {{count}} сервиса ({{dropped}} пропущено — библиотека заполнена)."
+    },
+    "cesiumIon": {
+      "defaultName": "Ресурс Cesium Ion",
+      "assetId": "ID ресурса",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "Изображения",
+      "altitudeOffset": "Смещение по высоте (м)",
+      "quickPicks": "Быстрый выбор",
+      "quickPicksPlaceholder": "Выберите ресурс…",
+      "quickPicksGlobal": "Доступно в любом аккаунте ion",
+      "quickPicksDepot": "Примеры из Asset Depot",
+      "hint": "Id ресурсов можно найти в разделе «My Assets» на ion.cesium.com. Доступ к ресурсу должен быть открыт для токена, указанного в настройках.",
+      "depotHint": "Примеры из Asset Depot начинают передаваться только после добавления в ваш аккаунт на ion.cesium.com → Asset Depot.",
+      "errorAssetId": "Введите id ресурса Cesium Ion (положительное целое число).",
+      "errorAltitude": "Введите смещение по высоте числом в метрах.",
+      "tokenMissing": "Токен Cesium Ion не настроен. Добавьте его в разделе Настройки → Переменные среды (VITE_CESIUM_TOKEN), иначе ресурс не загрузится."
+    },
+    "czml": {
+      "defaultName": "Динамическая сцена CZML",
+      "url": "URL CZML",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "Локальный файл",
+      "file": "Файл",
+      "quickPicks": "Примеры динамических сцен",
+      "hint": "Потоки и файлы CZML задают динамические 3D-позиции, анимации и орбиты, синхронизированные с часами глобуса.",
+      "errorUrl": "Введите корректный URL конечной точки CZML.",
+      "errorChooseFile": "Выберите файл CZML (.czml или .json) для загрузки.",
+      "errorFileMissing": "Не удалось прочитать выбранный файл.",
+      "errorInvalidCzml": "Файл не содержит корректного документа CZML (ожидался массив JSON или объект пакета).",
+      "readError": "Не удалось прочитать данные CZML."
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "URL KML / KMZ",
+      "errorSource": "Введите URL KML/KMZ или выберите файл."
     },
     "xyz": {
       "defaultName": "Слой XYZ",
@@ -477,6 +530,7 @@
       "selectType_many": "Выбрать из {{count}} типов объектов",
       "selectType_other": "Выбрать из {{count}} типа объектов",
       "noTypesFound": "Для этого сервиса не найдено типов объектов.",
+      "errorNoFeatures": "Этот тип объектов не вернул ни одного объекта.",
       "retrieveError": "Не удалось получить типы объектов из этого сервиса."
     },
     "wmts": {
@@ -954,9 +1008,53 @@
       "cellSize": "Размер ячейки",
       "lineWidth": "Толщина линии",
       "extrusion": "3D-выдавливание",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "Выбрать локальную модель",
+      "sampleDataset": "Пример набора данных",
+      "sampleCustom": "Своя модель",
+      "sampleAirplane": "Самолёт — Сан-Франциско",
+      "sampleShanghai": "Шанхай — центр города",
+      "modelFileHint": "Выберите файл GLB или самодостаточный glTF. Локальные модели встраиваются в сохранённые проекты, увеличивая размер проекта.",
+      "modelExternalResources": "Эта модель ссылается на отдельные файлы. Экспортируйте её в GLB со встроенными текстурами и буферами и повторите попытку.",
+      "modelTooLarge": "Эта модель превышает ограничение {{limit}} МБ для встраивания в проект. Разместите её на сервере и добавьте по URL.",
+      "modelFileError": "Не удалось прочитать эту модель. Выберите корректный файл glTF 2.0 или GLB."
     },
-    "nonGeographicCoordinates": "Координаты в {{names}} не являются долготой/широтой, поэтому на карте ничего не отобразится. СК указана неверно — перепроецируйте данные (или исправьте .prj) и загрузите снова."
+    "nonGeographicCoordinates": "Координаты в {{names}} не являются долготой/широтой, поэтому на карте ничего не отобразится. СК указана неверно — перепроецируйте данные (или исправьте .prj) и загрузите снова.",
+    "pmtiles": {
+      "errorUrl": "Введите корректный URL PMTiles по протоколу HTTP или HTTPS.",
+      "errorMlt": "ArcGIS требует векторные тайлы MVT, а не MLT."
+    },
+    "lidar": {
+      "errorUrl": "Введите корректный URL LiDAR по протоколу HTTP или HTTPS."
+    },
+    "zarr": {
+      "errorUrl": "Введите корректный URL Zarr по протоколу HTTP или HTTPS.",
+      "errorColorLimits": "Верхний предел цвета должен быть больше нижнего."
+    },
+    "raster": {
+      "errorSource": "Введите URL GeoTIFF или выберите файл."
+    },
+    "wcs": {
+      "coverage": "Покрытие",
+      "retrieve": "Получить покрытия",
+      "select": "Выберите покрытие",
+      "extent": "Использовать охват покрытия",
+      "width": "Ширина (пиксели)",
+      "height": "Высота (пиксели)",
+      "hint": "Загружает GeoTIFF в EPSG:4326 с выбранными размерами в пикселях. Значения могут быть пересчитаны. Сохраните растр, чтобы сохранить загруженные данные.",
+      "errors": {
+        "xml": "Сервис вернул некорректный XML.",
+        "version": "Этот источник требует WCS 1.0.0. Сервис вернул неподдерживаемый ответ.",
+        "empty": "Подходящие покрытия недоступны.",
+        "format": "Покрытие не объявляет вывод GeoTIFF.",
+        "crs": "Покрытие должно поддерживать EPSG:4326 для запросов и вывода.",
+        "size": "Выберите размеры от 1 до 4096 пикселей. Загрузка ограничена 128 МБ.",
+        "metadata": "Сервис вернул больше метаданных, чем GeoLibre может загрузить. Ответы с метаданными ограничены 32 МБ.",
+        "response": "Сервис не вернул корректный GeoTIFF.",
+        "bounds": "Введите допустимую рамку: запад/восток в пределах от -180 до 180, юг/север в пределах от -90 до 90, при этом запад < восток и юг < север.",
+        "url": "Введите URL сервиса WCS."
+      }
+    }
   },
   "offline": {
     "title": "Скачать офлайн-область",
@@ -1426,6 +1524,14 @@
     "errorFallback": "Не удалось поделиться проектом.",
     "usernameRequired": "Задайте имя пользователя в учётной записи {{shareHost}} перед публикацией. Откройте настройки учётной записи, чтобы выбрать имя, затем повторите попытку.",
     "openAccountSettings": "Открыть настройки учётной записи",
+    "shareAnyway": "Всё равно поделиться",
+    "localWarningTitle_one": "{{count}} слой будет отсутствовать на общей карте",
+    "localWarningTitle_few": "{{count}} слоя будут отсутствовать на общей карте",
+    "localWarningTitle_many": "{{count}} слоёв будут отсутствовать на общей карте",
+    "localWarningTitle_other": "{{count}} слоя будут отсутствовать на общей карте",
+    "localWarningBody": "{{shareHost}} хранит только файл проекта, но не файлы на вашем компьютере. Получатели открывают проект в браузере, который не может читать ваш диск, поэтому эти слои будут пустыми для всех, кроме вас.",
+    "localWarningAdvice": "Чтобы включить их, преобразуйте растры в Cloud Optimized GeoTIFF, а векторы в PMTiles или GeoParquet, разместите файлы на общедоступном HTTPS-сервере, например GitHub или Hugging Face, добавьте их на карту по URL и поделитесь снова. Небольшие локальные векторные слои встраиваются в проект автоматически.",
+    "localWarningLearnMore": "Подробнее",
     "readinessChecking": "Проверка того, смогут ли получатели загрузить ваши данные…",
     "readinessUnavailable": "Не удалось выполнить проверку источников данных.",
     "readinessAllReachable_one": "{{count}} источник данных выглядит доступным для получателей.",
@@ -1512,7 +1618,7 @@
   },
   "printLayout": {
     "title": "Макет печати",
-    "description": "Составьте карту для печати с заголовком, легендой, масштабной линейкой и указателем севера, затем экспортируйте её в PNG или PDF.",
+    "description": "Составьте карту для печати с заголовком, легендой, масштабной линейкой и указателем севера, затем экспортируйте её в PNG, PDF или SVG.",
     "preview": "Предпросмотр",
     "resizeControls": "Изменить размер панели управления",
     "resizeDialog": "Изменить размер диалога",
@@ -1520,6 +1626,7 @@
     "copyToClipboard": "Копировать в буфер обмена",
     "copied": "Скопировано",
     "exportPng": "Экспорт PNG",
+    "exportSvg": "Экспорт SVG",
     "exportPdf": "Экспорт PDF",
     "titleLabel": "Заголовок",
     "titlePlaceholder": "Заголовок карты",
@@ -1954,24 +2061,35 @@
     "noLayers": "Пока нет слоёв",
     "labelPlaceholder": "Подпись",
     "labelLabel": "Подпись для карты {{number}}",
+    "renderingEngineLabel": "Механизм отрисовки для карты {{number}}",
     "removePane": "Удалить карту {{number}}",
     "show3d": "Показать карту {{number}} как 3D-глобус",
     "show2d": "Показать карту {{number}} как 2D-карту",
     "only2d": "Только 2D",
-    "cesiumTokenHint": "Добавьте токен Cesium Ion в настройках, чтобы получить рельеф и снимки Ion"
+    "only3d": "Только 3D",
+    "noMapbox": "Без Mapbox",
+    "noArcgis": "Без ArcGIS",
+    "cesiumTokenHint": "Добавьте токен Cesium Ion в разделе <settingsLink>Настройки → Переменные среды</settingsLink>, чтобы получить рельеф и снимки Ion"
   },
   "renderer": {
     "basemap": "Базовая карта",
     "imagery": "Изображения",
     "projectBasemap": "Базовая карта проекта",
     "layerUnsupported": "Не отображается на 3D-глобусе",
+    "layerCesiumOnly": "Отображается только на 3D-глобусе",
+    "layerMapboxUnsupported": "Не отображается движком Mapbox",
+    "layerArcgisUnsupported": "Не отображается движком ArcGIS",
+    "layerArcgisViewUnsupported": "Не отображается в этом виде ArcGIS",
     "resetView": "Сбросить вид",
     "scene3D": "3D-глобус",
     "scene2D": "2D-карта",
     "sceneColumbus": "Вид Колумба",
     "fullscreenEnter": "Полный экран",
     "fullscreenExit": "Выйти из полного экрана",
-    "fullscreenUnavailable": "Полный экран недоступен"
+    "fullscreenUnavailable": "Полный экран недоступен",
+    "mapboxTokenHint": "Чтобы использовать этот движок, добавьте токен доступа Mapbox в <settingsLink>Настройки → Переменные среды</settingsLink>.",
+    "arcgisKeyHint": "Чтобы использовать стили подложек Esri, добавьте ключ API ArcGIS в <settingsLink>Настройки → Переменные среды</settingsLink>.",
+    "pluginUnsupported": "Этот плагин не поддерживает выбранный движок рендеринга."
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "Копировать координаты в буфер обмена",
@@ -2234,6 +2352,14 @@
       "cesiumTokenDescription": "3D-глобус (панель раздельного вида) работает и без токена: он отображает подложку проекта. Токен доступа добавляет Cesium World Terrain и мировые снимки Ion. Создайте бесплатную учётную запись на <tokenLink>ion.cesium.com/tokens</tokenLink>, скопируйте свой токен доступа по умолчанию и вставьте его ниже.",
       "cesiumTokenStorageNote": "Хранится локально на этом устройстве (не в файле проекта, поэтому никогда не передаётся) и отправляется только в Cesium Ion. В веб-сборке используется то же хранилище браузера, что и для других данных сайта.",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "Токен Mapbox",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "Чтобы использовать Mapbox, вставьте ниже токен доступа из <tokenLink>своего аккаунта Mapbox</tokenLink>.",
+      "mapboxTokenStorageNote": "Хранится локально на этом устройстве (не в файле проекта, поэтому никогда не передаётся) и отправляется только в Mapbox. В веб-сборке используется то же хранилище браузера, что и для других данных сайта.",
+      "arcgisKeyTitle": "Ключ API ArcGIS",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "Движок ArcGIS работает и без ключа: он отображает подложку проекта и ваши слои через ArcGIS Maps SDK for JavaScript, загружаемый с CDN Esri. Ключ API добавляет стили подложек Esri (улицы, снимки, топографическая карта, …). Создайте его в разделе <keyLink>учётные данные разработчика</keyLink> своей учётной записи ArcGIS с правом на подложки и вставьте ниже.",
+      "arcgisKeyStorageNote": "Хранится локально на этом устройстве (не в файле проекта, поэтому никогда не передаётся) и отправляется только в Esri. В веб-сборке используется то же хранилище браузера, что и для других данных сайта.",
       "variablesTitle": "Переменные среды",
       "variablesCount_one": "Включена {{count}} переменная времени выполнения.",
       "variablesCount_few": "Включено {{count}} переменные времени выполнения.",
@@ -2337,6 +2463,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "Привязанные ко времени события на Земле в реальном времени из общедоступных источников данных.",
+      "globeOnly": "Данные в реальном времени отображаются на глобусе Cesium. Переключитесь на 3D-глобус, чтобы увидеть их.",
+      "groups": {
+        "movement": "Движение",
+        "cameras": "Камеры",
+        "infrastructure": "Инфраструктура",
+        "events": "События",
+        "utilities": "Инструменты"
+      },
+      "earthquakes": "Землетрясения",
+      "spaceMissions": "Космические миссии (30 дней)",
+      "activeFires": "Активные пожары (24 ч)",
+      "satellites": "Спутники",
+      "flights": "Полёты в реальном времени",
+      "militaryFlights": "Военные самолёты",
+      "bikeShare": "Велопрокат",
+      "transit": "Общественный транспорт в реальном времени",
+      "streetTraffic": "Моделируемое дорожное движение",
+      "mappedAlpr": "Нанесённые на карту камеры распознавания номеров",
+      "cctv": "Общедоступные камеры видеонаблюдения",
+      "cctvPopup": {
+        "liveSnapshot": "Прямой снимок",
+        "provider": "Поставщик",
+        "attribution": "Атрибуция",
+        "privacy": "Конфиденциальность"
+      },
+      "radio": "Радиостанции",
+      "datacenters": "Центры обработки данных",
+      "dams": "Плотины",
+      "cables": "Подводные кабели",
+      "osmInfrastructure": "Инфраструктура OSM",
+      "loading": "Обновление…",
+      "updateFailed": "Не удалось обновить",
+      "noneInView": "В текущем виде для этого слоя не найдено объектов.",
+      "never": "Никогда",
+      "lastUpdated": "Последнее обновление: {{time}}",
+      "speed": "Скорость",
+      "speedRealTime": "Реальное время (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "Плотный каталог спутников",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "Не удалось загрузить каталог Starlink: {{error}}. Выберите, чтобы повторить попытку.",
+      "denseDescription": "Показать всю группировку Starlink в виде легковесных точек (без подписей и строк таблицы)."
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "Проект",
@@ -2430,6 +2606,7 @@
       "imperial": "Узлы / футы",
       "metric": "км/ч / метры",
       "bankCamera": "Наклонять горизонт в виражах",
+      "bankCameraMapbox": "В Mapbox GL нет крена камеры, поэтому здесь горизонт остаётся ровным. Самолёт по-прежнему кренится и разворачивается.",
       "invertPitch": "Инвертировать ось тангажа",
       "knots": "уз",
       "kph": "км/ч",
@@ -2573,9 +2750,12 @@
       "georss": "Слой GeoRSS",
       "video": "Видеослой",
       "deckglViz": "Слой Deck.gl",
+      "cesiumIon": "Ресурс Cesium Ion",
+      "czml": "Динамическая 3D-сцена CZML",
       "gltfModel": "3D-модель (glTF)",
       "postgres": "Слой PostgreSQL",
-      "iceberg": "Слой Apache Iceberg"
+      "iceberg": "Слой Apache Iceberg",
+      "wcs": "Слой WCS"
     },
     "conversion": {
       "vectorToVector": "Вектор в вектор",
@@ -2830,6 +3010,8 @@
       "splitViewSync": "Синхронизировать виды",
       "renderingEngine": "Механизм отрисовки",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Открыть в Google Maps",
       "viewInGoogleEarth": "Открыть в Google Earth",
@@ -2989,6 +3171,7 @@
       "saveProjectAsTitle": "Сохранить проект как",
       "saveProjectAsDesc": "Введите имя файла. Проект будет загружен в папку загрузок вашего браузера при нажатии «Сохранить».",
       "embedVectorTitle": "Встроить локальные векторные данные?",
+      "embedEditedGeometryDesc": "Этот проект содержит изменённые геометрии. Встройте векторные данные (около {{size}}), чтобы сохранить их. Без встраивания слои со ссылками откроются с исходными геометриями, а локальные данные могут оказаться недоступны.",
       "embedVectorDesc": "В этом проекте загружено локальных векторных слоёв с вашего компьютера: {{count}}. Браузер не может повторно прочитать их при повторном открытии проекта, поэтому их данные должны быть встроены в файл проекта для восстановления. Встраивание добавляет к файлу около {{size}}.",
       "embedVectorDescDesktop": "В этом проекте загружено локальных векторных слоёв с вашего компьютера: {{count}}. Встройте их данные, чтобы сделать проект автономным (добавляет около {{size}}), либо сохраните ссылки на файлы, которые будут перезагружаться с диска при повторном открытии проекта. Ссылки сохраняют файл небольшим, но перестают работать, если исходный файл позже перемещён или удалён.",
       "embedVectorDescMas": "В этом проекте загружено локальных векторных слоёв с вашего компьютера: {{count}}. Песочница Mac App Store не может сохранять доступ к этим файлам после закрытия GeoLibre, поэтому для восстановления данные необходимо встроить в файл проекта. Встраивание добавляет к файлу около {{size}}.",
@@ -3046,6 +3229,8 @@
       "maplibre-gl-esri-wayback": "Исторические снимки",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "Загрузчик OSM",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "Каталоги STAC",
       "geolibre-planet-open-data": "Открытые данные Planet",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -3057,6 +3242,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "Базовая карта Carto Light",
       "geolibre-flight-simulator": "Авиасимулятор",
+      "gods-eye-view": "Взгляд свыше",
       "geolibre-route-animation": "Анимация маршрута",
       "geolibre-sun": "Симуляция Солнца",
       "maplibre-atmosphere-effects": "Эффекты атмосферы",
@@ -3248,9 +3434,14 @@
     "openBuilder": "Конструктор выражений...",
     "invalidExpression": "Введите корректное логическое выражение.",
     "select": "Выбрать объекты",
+    "applyLayerFilter": "Фильтровать слой",
+    "clearLayerFilter": "Сбросить фильтр слоя",
+    "layerFilteredHint": "Постоянный фильтр скрывает часть объектов этого слоя.",
+    "layerFilteredBothHint": "Постоянный фильтр и быстрый фильтр скрывают часть объектов этого слоя.",
     "noLayers": "Добавьте векторный слой с объектами, чтобы сделать выбор.",
     "needTwoLayers": "Для выбора по расположению нужны два векторных слоя с объектами.",
     "summary": "Выбрано объектов: {{selected}} из {{total}} (совпадений: {{matched}}).",
+    "filterSummary": "Фильтр слоя применён: совпадений {{matched}} из {{total}} объектов.",
     "evaluationErrors": "Не удалось вычислить {{count}} объектов; они не были сопоставлены.",
     "unevaluableDisjoint": "{{count}} объектов исключено, так как их геометрию не удалось вычислить.",
     "tooManyPairs": "Для этого сравнения требуется {{pairs}} проверок пар объектов (предел {{limit}}). Вместо этого используйте Обработка → GeoLibre → Вектор → Выбрать по расположению с движком «Сайдкар».",
@@ -3706,10 +3897,14 @@
     "title": "Каталоги STAC",
     "footprintLayerName": "Контуры поиска STAC",
     "catalogSearch": "Найти публичный каталог в STAC Index",
+    "portolanCatalogSearch": "Найти публичный каталог в Portolan Registry",
     "catalogSearchPlaceholder": "Поиск по названиям каталогов…",
     "indexLoading": "Загрузка STAC Index…",
+    "portolanIndexLoading": "Загрузка Portolan Registry…",
     "indexUnavailable": "STAC Index недоступен: введите URL",
+    "portolanIndexUnavailable": "Portolan Registry недоступен: введите URL",
     "indexLoadFailed": "Не удалось загрузить STAC Index",
+    "portolanIndexLoadFailed": "Не удалось загрузить Portolan Registry",
     "urlLabel": "URL каталога или API STAC",
     "connect": "Подключиться",
     "connecting": "Подключение к STAC…",
@@ -4650,6 +4845,10 @@
       "errorStartSidecar": "Не удалось запустить sidecar GeoLibre.",
       "errorStopSidecar": "Не удалось остановить sidecar GeoLibre.",
       "noToolsFound": "Инструменты не найдены.",
+      "searchToolsByMeaning": "Поиск инструментов или описание задачи",
+      "searchingByMeaning": "Поиск в каталоге по смыслу",
+      "bestMatches": "Лучшие совпадения",
+      "otherMatches": "Другие совпадения",
       "noParameters": "У этого инструмента нет параметров.",
       "noOutput": "Вывода пока нет.",
       "enabled": "Включено",
@@ -4724,6 +4923,10 @@
                 "inside": "Внутри (сжать)",
                 "both": "Обе стороны"
               }
+            },
+            "dissolve": {
+              "label": "Растворить результат",
+              "description": "Объединяет буферы в один объект и растворяет перекрытия между ними. Объединённая фигура не относится ни к одному исходному объекту, поэтому атрибуты отбрасываются; чтобы растворить по атрибуту, примените к результату инструмент «Растворить»."
             }
           }
         },
@@ -6545,6 +6748,7 @@
     "description": "Сохраняйте, просматривайте и применяйте многократно используемые стили, символы, шаблоны подписей и цветовые градиенты для слоёв и проектов.",
     "searchPlaceholder": "Поиск стилей и тегов…",
     "presetsSection": "Встроенные шаблоны",
+    "presetActions": "Действия с шаблоном",
     "librarySection": "Моя библиотека",
     "projectSection": "Этот проект",
     "empty": "Нет подходящих сохранённых стилей. Сохраните стиль слоя или импортируйте библиотеку, чтобы начать.",
@@ -6920,6 +7124,7 @@
     "footerDeck": "Изменения применяются в реальном времени к стилю слоя deck.gl DuckDB.",
     "footerMaplibre": "Изменения применяются в реальном времени к свойствам paint MapLibre.",
     "pluginPaintedFooter": "Этот слой рисует его плагин, который предоставляет собственные элементы управления стилем.",
+    "serviceStyledFooter": "Этот слой сохраняет собственное оформление своего сервиса; непрозрачность, порядок, диапазон масштабов и фильтры по-прежнему применяются.",
     "extrusion": {
       "color": "Цвет выдавливания",
       "opacity": "Непрозрачность выдавливания",
@@ -7115,6 +7320,11 @@
       "invalidExpression": "Некорректное выражение",
       "openBuilder": "Открыть конструктор выражений",
       "showFeatureId": "Показывать строку с идентификатором объекта",
+      "maxWidth": "Ширина всплывающего окна (пикс.)",
+      "maxWidthPlaceholder": "По умолчанию",
+      "imageHeight": "Высота изображения (пикс.)",
+      "imageHeightPlaceholder": "По умолчанию",
+      "sizeHint": "Оставьте поле пустым, чтобы использовать значение по умолчанию. Изображение сохраняет пропорции, поэтому дополнительная высота будет использована, только если расширить всплывающее окно.",
       "fields": "Поля",
       "allFields": "Поля не выбраны, поэтому отображаются все видимые поля в порядке, заданном самими данными.",
       "addField": "Добавить поле…",
@@ -7176,6 +7386,7 @@
     "allFieldsUsed": "У каждого поля уже есть фильтр",
     "removeAll": "Удалить все",
     "clearAll": "Очистить фильтры",
+    "clearAllWithExpression": "Очистить фильтры и сохранённое выражение",
     "clearOne": "Очистить этот фильтр",
     "clearOneNamed": "Очистить фильтр по полю {{field}}",
     "remove": "Удалить фильтр",
@@ -7311,6 +7522,9 @@
     "saveEditsSuccess": "Сохранено объектов в исходный файл: {{count}}.",
     "saveEditsNoFeatures": "В этом слое нет объектов для сохранения.",
     "saveEditsError": "Не удалось сохранить изменения в исходный файл.",
+    "pendingTableDraftsBlocked": "В таблице атрибутов есть несохранённые изменения, которые нельзя применить. Исправьте или отмените их и повторите попытку.",
+    "saveEditsToArcgis": "Сохранить изменения в сервис ArcGIS",
+    "saveEditsArcgisSuccess": "Сохранено в ArcGIS: добавлено {{inserted}}, обновлено {{updated}}, удалено {{deleted}}.",
     "saveEditsToPostgis": "Сохранить изменения в таблицу PostGIS",
     "saveEditsPostgisSuccess": "Сохранено в {{table}}: добавлено {{inserted}}, обновлено {{updated}}, удалено {{deleted}}.",
     "saveEditsPostgisSkippedFields": "Поля без соответствующего столбца таблицы не сохранены: {{fields}}.",
@@ -7353,6 +7567,8 @@
     "renameGroup": "Переименовать группу",
     "moveGroupUp": "Переместить группу вверх",
     "moveGroupDown": "Переместить группу вниз",
+    "sortGroupAscending": "Сортировать от А до Я",
+    "sortGroupDescending": "Сортировать от Я до А",
     "ungroupKeepLayers": "Разгруппировать (сохранить слои)",
     "deleteGroupAndLayers": "Удалить группу и слои",
     "groupActions": "Действия с группой",
@@ -7468,7 +7684,20 @@
     "stretchLinear": "Линейное",
     "stretchLog": "Логарифмическое",
     "stretchSqrt": "Квадратный корень",
+    "viewportStretch": "Растяжение по области просмотра",
+    "viewportMinMax": "Мин. / макс. области просмотра",
+    "viewportPercentile": "Процентили 5–95 области просмотра",
+    "viewportStddev": "Среднее ± 2 стандартных отклонения области просмотра",
+    "viewportApply": "Применить к области просмотра",
+    "viewportStretching": "Чтение области просмотра…",
+    "viewportStretchApplied": "Растяжение по области просмотра применено",
+    "viewportAuto": "Обновлять автоматически при перемещении карты",
+    "viewportStretchNoView": "Вид карты недоступен.",
+    "viewportStretchNoValues": "В области просмотра не найдено значений растра.",
+    "viewportStretchNoRange": "Значения в области просмотра не образуют диапазон.",
+    "viewportStretchMoved": "Карта была перемещена до завершения чтения. Примените ещё раз.",
     "index": "Индекс",
+    "opacityClasses": "Классы непрозрачности",
     "classifyToggle": "Разбить на дискретные классы",
     "method": "Метод",
     "methodEqualInterval": "Равные интервалы",
@@ -8042,5 +8271,77 @@
     "catalogHuc12pp": "Замыкающие створы HUC12",
     "catalogNmwdiSt": "Водные пункты Нью-Мексико",
     "catalogFlowlines": "Водотоки NHDPlus"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "В этом виде ArcGIS используйте URL tileset.json для 3D Tiles. Для тайлов Google Photorealistic и I3S нужен другой движок отрисовки.",
+      "globeGoogleKeyRequired": "Для загрузки Google Photorealistic 3D Tiles на глобусе нужен ключ API Google Maps в настройках."
+    },
+    "geolibre-osm-downloader": {
+      "title": "Загрузчик OSM",
+      "hint": "Загрузите объекты OpenStreetMap из текущей области карты через публичный Overpass API.",
+      "attribution": "Данные © участники OpenStreetMap, доступны по лицензии ODbL.",
+      "featureType": "Тип объекта",
+      "presetBuildings": "Здания",
+      "presetRoads": "Дороги",
+      "presetAmenities": "Объекты инфраструктуры",
+      "presetWaterways": "Водные объекты",
+      "presetLanduse": "Использование земли",
+      "presetCustom": "Пользовательский тег",
+      "presetAll": "Все объекты с тегами",
+      "tagKey": "Ключ тега",
+      "tagValue": "Значение тега",
+      "tagKeyPlaceholder": "напр. shop",
+      "tagValuePlaceholder": "необязательно, напр. bakery",
+      "west": "Запад",
+      "south": "Юг",
+      "east": "Восток",
+      "north": "Север",
+      "useMapExtent": "Использовать границы карты",
+      "download": "Загрузить данные OSM",
+      "ready": "Выберите область и тип объекта.",
+      "exportGeoJson": "Сохранить GeoJSON",
+      "mapUnavailable": "Границы карты пока недоступны.",
+      "extentApplied": "Границы карты применены.",
+      "downloading": "Загрузка из OpenStreetMap…",
+      "noFeatures": "В этой области не найдено подходящих объектов.",
+      "error": "Не удалось загрузить данные OSM: {{message}}",
+      "added": "Добавлено объектов на карту: {{count}}."
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "Найдите покрытие плитками IGN LiDAR HD для текущей области карты, добавьте плитки на карту в виде облаков точек или скачайте их файлы COPC LAZ с серверов IGN.",
+      "attribution": "Данные © IGN — LiDAR HD, опубликованы по лицензии Licence Ouverte 2.0.",
+      "west": "Запад",
+      "south": "Юг",
+      "east": "Восток",
+      "north": "Север",
+      "useMapExtent": "Использовать границы карты",
+      "search": "Искать плитки",
+      "addToMap": "Добавить на карту",
+      "download": "Скачать",
+      "ready": "Выберите область и выполните поиск плиток LiDAR HD.",
+      "mapUnavailable": "Границы карты пока недоступны.",
+      "extentApplied": "Границы карты применены.",
+      "searching": "Поиск плиток IGN LiDAR HD…",
+      "noTiles": "В этой области плитки LiDAR HD не найдены.",
+      "noDownload": "облако точек не опубликовано",
+      "layerName": "Плитки IGN LiDAR HD",
+      "found": "Найдено плиток: {{count}}.",
+      "foundTruncated": "Показаны первые {{count}} из {{matched}} плиток. Сузьте область поиска, чтобы увидеть остальные.",
+      "addedToMap": "{{name}} добавлен(а) на карту.",
+      "alreadyOnMap": "{{name}} уже на карте.",
+      "unsupportedRenderer": "Облакам точек требуется движок рендеринга MapLibre или Mapbox.",
+      "addError": "Не удалось добавить {{name}} на карту: {{message}}",
+      "error": "Не удалось выполнить поиск плиток IGN LiDAR HD: {{message}}",
+      "selectAll": "Выбрать все",
+      "selectTile": "Выбрать {{name}}",
+      "addSelectedToMap": "Добавить выбранные на карту",
+      "addSelectedToMapCount": "Добавить выбранные ({{count}}) на карту",
+      "addingSelected": "Добавление {{count}} плиток на карту…",
+      "addedSelectedCount": "Добавлено плиток на карту: {{count}}.",
+      "alreadyOnMapCountPlural": "Плиток уже было на карте: {{count}}.",
+      "addSelectedFailedCount": "Не удалось добавить плиток: {{count}}."
+    }
   }
 }

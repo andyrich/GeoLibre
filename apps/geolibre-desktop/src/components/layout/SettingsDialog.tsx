@@ -1,3 +1,4 @@
+import { migrateMapboxTokenSettings } from "../../lib/mapbox-token-settings";
 import {
   DEFAULT_PROJECT_PREFERENCES,
   ELLIPSOIDS,
@@ -165,7 +166,12 @@ export type SettingsSection =
   | "startup";
 
 /** A field a deep-link can ask Settings to focus once the section renders. */
-export type SettingsFocusTarget = "shareToken" | "accentColor";
+export type SettingsFocusTarget =
+  | "shareToken"
+  | "cesiumToken"
+  | "mapboxToken"
+  | "arcgisKey"
+  | "accentColor";
 
 /** Window event letting any panel open Settings at a given section (no prop-drilling). */
 export const OPEN_SETTINGS_EVENT = "geolibre:open-settings";
@@ -211,7 +217,11 @@ interface SettingsDialogProps {
 type TransComponents = Record<string, ReactElement>;
 
 type SettingsTransProps = {
-  i18nKey: "settings.env.tokenDescription" | "settings.env.cesiumTokenDescription";
+  i18nKey:
+    | "settings.env.tokenDescription"
+    | "settings.env.cesiumTokenDescription"
+    | "settings.env.mapboxTokenDescription"
+    | "settings.env.arcgisKeyDescription";
   values?: { shareHost: string };
   components?: TransComponents;
 };
@@ -219,6 +229,28 @@ type SettingsTransProps = {
 // TS 7 exhausts its instantiation depth when it expands Trans's catalog-wide
 // generics from this large generated locale type. Keep the key union explicit.
 const SettingsTrans = Trans as ComponentType<SettingsTransProps>;
+
+const mapboxTokenComponents: TransComponents = {
+  tokenLink: (
+    <a
+      className="underline"
+      href="https://account.mapbox.com/access-tokens/"
+      target="_blank"
+      rel="noreferrer noopener"
+    />
+  ),
+};
+
+const arcgisKeyComponents: TransComponents = {
+  keyLink: (
+    <a
+      className="underline"
+      href="https://developers.arcgis.com/documentation/security-and-authentication/api-key-authentication/"
+      target="_blank"
+      rel="noreferrer noopener"
+    />
+  ),
+};
 
 const cesiumTokenComponents: TransComponents = {
   tokenLink: (
@@ -292,6 +324,8 @@ interface DraftDesktopSettings {
   layout: DesktopLayoutSettings;
   shareToken: string;
   cesiumIonToken: string;
+  mapboxAccessToken: string;
+  arcgisApiKey: string;
   aiProfiles: AssistantProfile[];
   defaultAiProfileId: string | null;
   uiProfile: UiProfileSettings;
@@ -349,7 +383,9 @@ function createDraftId(): string {
 function clonePreferences(preferences: ProjectPreferences): DraftPreferences {
   return {
     map: { ...preferences.map },
-    environmentVariables: preferences.environmentVariables.map((variable) => ({
+    environmentVariables: migrateMapboxTokenSettings(
+      preferences.environmentVariables,
+    ).variables.map((variable) => ({
       ...variable,
       id: createDraftId(),
     })),
@@ -360,11 +396,19 @@ function clonePreferences(preferences: ProjectPreferences): DraftPreferences {
   };
 }
 
-function cloneDesktopSettings(settings: DesktopSettings): DraftDesktopSettings {
+function cloneDesktopSettings(
+  settings: DesktopSettings,
+  preferences: ProjectPreferences,
+): DraftDesktopSettings {
   return {
     layout: { ...settings.layout },
     shareToken: settings.shareToken,
     cesiumIonToken: settings.cesiumIonToken,
+    mapboxAccessToken: migrateMapboxTokenSettings(
+      preferences.environmentVariables,
+      settings.mapboxAccessToken,
+    ).token,
+    arcgisApiKey: settings.arcgisApiKey,
     aiProfiles: settings.aiProfiles.map((p) => ({
       ...p,
       fieldValues: { ...p.fieldValues },
@@ -550,6 +594,9 @@ export function SettingsDialog({
   // after the focus lands so a later open without a focus request stays put.
   const [pendingFocus, setPendingFocus] = useState<SettingsFocusTarget | null>(null);
   const shareTokenInputRef = useRef<HTMLInputElement>(null);
+  const cesiumTokenInputRef = useRef<HTMLInputElement>(null);
+  const mapboxTokenInputRef = useRef<HTMLInputElement>(null);
+  const arcgisKeyInputRef = useRef<HTMLInputElement>(null);
   const languagePackFileRef = useRef<HTMLInputElement>(null);
   // The native color input in the Appearance pane. The accent-color dropdown's
   // "Custom" entry deep-links here so picking a custom color is reachable
@@ -586,7 +633,7 @@ export function SettingsDialog({
     clonePreferences(preferences),
   );
   const [draftDesktopSettings, setDraftDesktopSettings] = useState<DraftDesktopSettings>(() =>
-    cloneDesktopSettings(desktopSettings),
+    cloneDesktopSettings(desktopSettings, preferences),
   );
   const [error, setError] = useState<string | null>(null);
   // Live map projection, captured when the dialog opens. The Globe projection
@@ -705,7 +752,10 @@ export function SettingsDialog({
     const seededPreferences = clonePreferences(useAppStore.getState().preferences);
     setDraftPreferences(seededPreferences);
     setDraftDesktopSettings(
-      cloneDesktopSettings(useDesktopSettingsStore.getState().desktopSettings),
+      cloneDesktopSettings(
+        useDesktopSettingsStore.getState().desktopSettings,
+        useAppStore.getState().preferences,
+      ),
     );
     // Land the AI section on the first profile's provider, or the first
     // available provider if no profiles exist, so the user sees something
@@ -803,11 +853,21 @@ export function SettingsDialog({
   // only mounts when the Environment section is active, so this waits for the
   // section to settle rather than focusing on open.
   useEffect(() => {
-    if (!open || pendingFocus !== "shareToken") return;
+    const input =
+      pendingFocus === "shareToken"
+        ? shareTokenInputRef
+        : pendingFocus === "cesiumToken"
+          ? cesiumTokenInputRef
+          : pendingFocus === "mapboxToken"
+            ? mapboxTokenInputRef
+            : pendingFocus === "arcgisKey"
+              ? arcgisKeyInputRef
+              : null;
+    if (!open || !input) return;
     if (effectiveSection !== "environment") return;
     const id = window.requestAnimationFrame(() => {
-      shareTokenInputRef.current?.focus();
-      shareTokenInputRef.current?.select();
+      input.current?.focus();
+      input.current?.select();
       // Set the guard BEFORE clearing pendingFocus: the clear re-runs the
       // nav-focus effect, and because this write is synchronous and lexically
       // first, the ref is already true when that run reads it, so it skips and
@@ -1348,6 +1408,8 @@ export function SettingsDialog({
       layout: draftDesktopSettings.layout,
       shareToken: draftDesktopSettings.shareToken,
       cesiumIonToken: draftDesktopSettings.cesiumIonToken,
+      mapboxAccessToken: draftDesktopSettings.mapboxAccessToken,
+      arcgisApiKey: draftDesktopSettings.arcgisApiKey,
       aiProfiles: draftDesktopSettings.aiProfiles,
       defaultAiProfileId: draftDesktopSettings.defaultAiProfileId,
       uiProfile: committedUiProfile,
@@ -2806,6 +2868,7 @@ export function SettingsDialog({
                       />
                     </p>
                     <Input
+                      ref={cesiumTokenInputRef}
                       aria-label={t("settings.env.cesiumTokenTitle")}
                       type="password"
                       autoComplete="new-password"
@@ -2815,6 +2878,58 @@ export function SettingsDialog({
                     />
                     <p className="text-xs text-muted-foreground">
                       {t("settings.env.cesiumTokenStorageNote")}
+                    </p>
+                  </div>
+                  <div className="space-y-2 border-t pt-5">
+                    <h3 className="text-sm font-semibold">{t("settings.env.mapboxTokenTitle")}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      <SettingsTrans
+                        i18nKey="settings.env.mapboxTokenDescription"
+                        components={mapboxTokenComponents}
+                      />
+                    </p>
+                    <Input
+                      ref={mapboxTokenInputRef}
+                      aria-label={t("settings.env.mapboxTokenTitle")}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={t("settings.env.mapboxTokenPlaceholder")}
+                      value={draftDesktopSettings.mapboxAccessToken}
+                      onChange={(event) =>
+                        setDraftDesktopSettings((current) => ({
+                          ...current,
+                          mapboxAccessToken: event.target.value,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t("settings.env.mapboxTokenStorageNote")}
+                    </p>
+                  </div>
+                  <div className="space-y-2 border-t pt-5">
+                    <h3 className="text-sm font-semibold">{t("settings.env.arcgisKeyTitle")}</h3>
+                    <p className="text-xs text-muted-foreground">
+                      <SettingsTrans
+                        i18nKey="settings.env.arcgisKeyDescription"
+                        components={arcgisKeyComponents}
+                      />
+                    </p>
+                    <Input
+                      ref={arcgisKeyInputRef}
+                      aria-label={t("settings.env.arcgisKeyTitle")}
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={t("settings.env.arcgisKeyPlaceholder")}
+                      value={draftDesktopSettings.arcgisApiKey}
+                      onChange={(event) =>
+                        setDraftDesktopSettings((current) => ({
+                          ...current,
+                          arcgisApiKey: event.target.value,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      {t("settings.env.arcgisKeyStorageNote")}
                     </p>
                   </div>
                   <div className="flex items-center justify-between gap-3 border-t pt-5">

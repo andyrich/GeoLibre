@@ -14,6 +14,7 @@ import {
   documentLocale,
   resolveLabelNumberLocale,
 } from "@geolibre/core";
+import type { FeatureCollection } from "geojson";
 import type { PropertyValueSpecification } from "maplibre-gl";
 import type { VectorLayerInfo, VectorLayerOptions, VectorLayerStyle } from "maplibre-gl-vector";
 import { stacAssetAccessFromLayer, STAC_ASSET_ACCESS_METADATA_KEY } from "./stac-signing";
@@ -39,6 +40,19 @@ export type VectorSyncableControl = {
   setLayerVisibility: (id: string, visible: boolean) => void;
   setLayerStyle: (id: string, style: Partial<VectorLayerStyle>) => void;
 };
+
+const geometryReaders = new WeakMap<
+  VectorSyncableControl,
+  (info: VectorLayerInfo) => FeatureCollection | undefined
+>();
+
+/** Register the geometry backing a control rendered by a non-MapLibre engine. */
+export function setVectorGeometryReader(
+  control: VectorSyncableControl,
+  reader: (info: VectorLayerInfo) => FeatureCollection | undefined,
+): void {
+  geometryReaders.set(control, reader);
+}
 
 let syncedControl: VectorSyncableControl | null = null;
 let storeUnsubscribe: (() => void) | null = null;
@@ -248,6 +262,16 @@ export function syncVectorLayersToStore(
 
     for (const info of infos) {
       const layer = createVectorStoreLayer(info, panelCollapsed);
+      const geometryReader = geometryReaders.get(control);
+      if (geometryReader) {
+        layer.geojson = geometryReader(info);
+        // The globe draws the collection itself, so a tiled record takes the
+        // GeoJSON path: the drape never creates the control's DuckDB source.
+        if (layer.geojson) {
+          layer.type = "geojson";
+          layer.source = { ...layer.source, type: "geojson" };
+        }
+      }
       const existing = useAppStore.getState().layers.find((current) => current.id === layer.id);
 
       if (!existing) {
@@ -267,16 +291,31 @@ export function syncVectorLayersToStore(
       const opacity = opacityIsEcho ? existing.opacity : layer.opacity;
       const sourceUrl = typeof layer.source.url === "string" ? layer.source.url : undefined;
       const stacAssetAccess = sourceUrl ? stacAssetAccessFromLayer(existing, sourceUrl) : null;
-      const metadata = stacAssetAccess
+      let metadata = stacAssetAccess
         ? { ...layer.metadata, [STAC_ASSET_ACCESS_METADATA_KEY]: stacAssetAccess }
         : layer.metadata;
+      const style = geometryReader
+        ? { ...existing.style, ...vectorStyleToLayerStyle(info) }
+        : existing.style;
       const source = stacAssetAccess
         ? { ...layer.source, url: stacAssetAccess.href }
         : layer.source;
       const sourcePath = stacAssetAccess ? stacAssetAccess.href : layer.sourcePath;
+      // Render-mode changes keep the same data, but a replacement URL, file,
+      // or source kind must not inherit the previous source's edited snapshot.
+      const sourceChanged =
+        existing.source.url !== source.url ||
+        existing.sourcePath !== sourcePath ||
+        existing.metadata.vectorSource !== metadata.vectorSource;
+      if (!sourceChanged && existing.metadata.geometryEdited === true) {
+        metadata = { ...metadata, geometryEdited: true };
+      }
 
       if (
         existing.type !== layer.type ||
+        (geometryReader &&
+          (existing.geojson !== layer.geojson ||
+            !recordsEqual({ ...existing.style }, { ...style }))) ||
         existing.visible !== visible ||
         existing.opacity !== opacity ||
         existing.sourcePath !== sourcePath ||
@@ -286,11 +325,18 @@ export function syncVectorLayersToStore(
         useAppStore.getState().updateLayer(layer.id, {
           // Replace control-derived metadata wholesale so stale keys (bounds,
           // featureCount, and loaded embeddedGeoJSON) cannot survive a layer
-          // being swapped out under the same id. Only the STAC access record is
-          // host-owned and carried forward so a protected URL can be re-signed.
+          // being swapped out under the same id. Preserve the host-owned geometry
+          // edit flag and STAC access record so edits survive synchronization
+          // and protected URLs can be re-signed.
           // The web Save flow re-materializes embeddedGeoJSON fresh from the
           // control (getLayerGeoJSON), so it intentionally is not preserved.
           metadata,
+          ...(geometryReader ? { style } : {}),
+          ...(geometryReader
+            ? { geojson: layer.geojson }
+            : sourceChanged
+              ? { geojson: undefined }
+              : {}),
           opacity,
           source,
           sourcePath,

@@ -6,7 +6,12 @@ import convex from "@turf/convex";
 import mask from "@turf/mask";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type { GeometryGeneratorType, LayerStyle } from "@geolibre/core";
-import { bodyLengthToEarth, getActiveBodyRadiusRatio, styleValue } from "@geolibre/core";
+import {
+  bodyLengthToEarth,
+  getActiveBodyRadiusRatio,
+  horizontalBbox,
+  styleValue,
+} from "@geolibre/core";
 
 /**
  * Derived feature collections for the symbology pack (#1323): the inverted
@@ -86,6 +91,59 @@ function computeInvertedMask(
     // break layer sync; the caller falls back to the normal fill.
     return null;
   }
+}
+
+// turf's mask is a world rectangle ([-180, -90] to [180, 90]) with every
+// feature cut out as a hole wound the same way as that rectangle. MapLibre
+// draws it as intended, but mapbox-gl drops a ring reaching the poles and draws
+// each same-wound hole as a polygon of its own, which inverts the mask (the
+// features filled, the world around them empty).
+const renderableMasks = new WeakMap<FeatureCollection, FeatureCollection<Polygon | MultiPolygon>>();
+
+/**
+ * An inverted-fill mask mapbox-gl draws the way MapLibre draws the original:
+ * the world ring pulled inside the Web Mercator latitude limit and the holes
+ * given the RFC 7946 opposing winding. Memoized per mask.
+ *
+ * @param mask - A mask from {@link buildInvertedMask}.
+ * @returns The same mask, safe for mapbox-gl.
+ */
+export function mapboxRenderableMask(
+  mask: FeatureCollection<Polygon | MultiPolygon>,
+): FeatureCollection<Polygon | MultiPolygon> {
+  const cached = renderableMasks.get(mask);
+  if (cached) return cached;
+  const winding = (ring: number[][]) => {
+    let sum = 0;
+    for (let i = 0; i < ring.length - 1; i++)
+      sum += (ring[i + 1][0] - ring[i][0]) * (ring[i + 1][1] + ring[i][1]);
+    return Math.sign(sum);
+  };
+  const maxLat = 85.0511;
+  const fix = (rings: number[][][]) =>
+    rings.map((ring, index) =>
+      index === 0
+        ? ring.map(([lng, lat]) => [lng, Math.max(-maxLat, Math.min(maxLat, lat))])
+        : winding(ring) === winding(rings[0])
+          ? [...ring].reverse()
+          : ring,
+    );
+  const result: FeatureCollection<Polygon | MultiPolygon> = {
+    ...mask,
+    features: mask.features.map((feature) =>
+      feature.geometry.type === "Polygon"
+        ? {
+            ...feature,
+            geometry: { ...feature.geometry, coordinates: fix(feature.geometry.coordinates) },
+          }
+        : {
+            ...feature,
+            geometry: { ...feature.geometry, coordinates: feature.geometry.coordinates.map(fix) },
+          },
+    ),
+  };
+  renderableMasks.set(mask, result);
+  return result;
 }
 
 /**
@@ -203,15 +261,10 @@ function deriveFeature(
       case "centroid":
         return centroid(feature);
       case "bounding-box": {
-        const box = bbox(feature);
-        if (!box.every((value) => Number.isFinite(value))) return null;
-        // bbox() returns 6 elements [minX,minY,minZ,maxX,maxY,maxZ] when any
-        // coordinate carries a Z value; normalize to the 2D corners so the
-        // degenerate check and bboxPolygon() see [minX,minY,maxX,maxY].
-        const box2d: [number, number, number, number] =
-          box.length === 6
-            ? [box[0], box[1], box[3], box[4]]
-            : (box as [number, number, number, number]);
+        // A six-element box carries elevation, so reduce it to the 2D corners
+        // the degenerate check and bboxPolygon() expect.
+        const box2d = horizontalBbox(bbox(feature));
+        if (!box2d) return null;
         // A point's bbox is degenerate (zero area) and would render nothing.
         if (box2d[0] === box2d[2] && box2d[1] === box2d[3]) return null;
         return bboxPolygon(box2d);

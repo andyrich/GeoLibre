@@ -22,6 +22,7 @@
     "noMatches": "Tidak ada yang cocok.",
     "addFailed": "Tidak dapat menambahkan sumber data ini.",
     "builtinBadge": "bawaan",
+    "configBadge": "config",
     "newConnection": "Koneksi {{kind}} baru",
     "loadingTables": "Memuat tabel…",
     "files": "File",
@@ -345,6 +346,22 @@
       "polyline": {
         "label": "Tambahkan Layer Polyline Terenkode",
         "description": "Impor string polyline terenkode (Google, OSRM, Valhalla) dari teks atau file sebagai garis vektor."
+      },
+      "cesiumIon": {
+        "label": "Tambahkan Aset Cesium Ion",
+        "description": "Tambahkan tileset 3D Tiles atau citra dari Cesium Ion berdasarkan id aset. Dirender pada bola dunia 3D dengan token Cesium Ion Anda."
+      },
+      "czml": {
+        "label": "Tambahkan Layer 3D Dinamis CZML",
+        "description": "Muat dokumen Cesium Language (CZML) dinamis yang menggambarkan orbit, lintasan, jalur kendaraan, dan adegan 3D yang berubah seiring waktu pada bola dunia."
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "Muat KML atau KMZ dengan gaya asli, overlay, dan tautan jaringan pada globe."
+      },
+      "wcs": {
+        "description": "Muat subset GeoTIFF numerik dari layanan WCS 1.0.0.",
+        "label": "Layer WCS"
       }
     },
     "shared": {
@@ -384,6 +401,7 @@
       "loadAria": "Muat layanan tersimpan",
       "loadPlaceholder": "Muat layanan tersimpan…",
       "builtin": "{{name}} (bawaan)",
+      "config": "{{name}} (config)",
       "deleteAria": "Hapus layanan tersimpan",
       "empty": "Belum ada layanan tersimpan — isi formulir dan pilih “Simpan saat ini”.",
       "name": "Nama",
@@ -399,6 +417,41 @@
       "errorRead": "Tidak dapat membaca file tersebut sebagai pustaka layanan.",
       "imported_other": "Mengimpor {{count}} layanan.",
       "importedWithDropped_other": "Mengimpor {{count}} layanan ({{dropped}} dilewati — pustaka penuh)."
+    },
+    "cesiumIon": {
+      "defaultName": "Aset Cesium Ion",
+      "assetId": "ID aset",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "Citra",
+      "altitudeOffset": "Offset ketinggian (m)",
+      "quickPicks": "Pilihan cepat",
+      "quickPicksPlaceholder": "Pilih aset…",
+      "quickPicksGlobal": "Termasuk di setiap akun ion",
+      "quickPicksDepot": "Contoh Asset Depot",
+      "hint": "Temukan id aset di bagian My Assets pada ion.cesium.com. Aset harus dibagikan dengan token yang dikonfigurasi di Pengaturan.",
+      "depotHint": "Contoh Asset Depot baru dapat dialirkan setelah Anda menambahkannya ke akun Anda di ion.cesium.com → Asset Depot.",
+      "errorAssetId": "Masukkan id aset Cesium Ion (bilangan bulat positif).",
+      "errorAltitude": "Masukkan offset ketinggian sebagai angka dalam meter.",
+      "tokenMissing": "Belum ada token Cesium Ion yang dikonfigurasi. Tambahkan di Pengaturan → Variabel lingkungan (VITE_CESIUM_TOKEN), jika tidak aset akan gagal dimuat."
+    },
+    "czml": {
+      "defaultName": "Adegan Dinamis CZML",
+      "url": "URL CZML",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "File lokal",
+      "file": "File",
+      "quickPicks": "Contoh adegan dinamis",
+      "hint": "Stream atau file CZML mendefinisikan posisi 3D dinamis, animasi, dan orbit yang disinkronkan dengan jam bola dunia.",
+      "errorUrl": "Masukkan URL endpoint CZML yang valid.",
+      "errorChooseFile": "Pilih file CZML (.czml atau .json) untuk dimuat.",
+      "errorFileMissing": "File yang dipilih tidak dapat dibaca.",
+      "errorInvalidCzml": "File tidak berisi dokumen CZML yang valid (diharapkan array JSON atau objek paket).",
+      "readError": "Gagal membaca data CZML."
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "URL KML / KMZ",
+      "errorSource": "Masukkan URL KML/KMZ atau pilih berkas."
     },
     "xyz": {
       "defaultName": "Layer XYZ",
@@ -459,6 +512,7 @@
       "retrievedTypes": "Tipe fitur yang diambil",
       "selectType_other": "Pilih dari {{count}} tipe fitur",
       "noTypesFound": "Tidak ada tipe fitur yang ditemukan untuk layanan ini.",
+      "errorNoFeatures": "Tipe fitur ini tidak mengembalikan fitur apa pun.",
       "retrieveError": "Tidak dapat mengambil tipe fitur dari layanan ini."
     },
     "wmts": {
@@ -891,9 +945,53 @@
       "cellSize": "Ukuran sel",
       "lineWidth": "Lebar garis",
       "extrusion": "Ekstrusi 3D",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "Pilih model lokal",
+      "sampleDataset": "Dataset contoh",
+      "sampleCustom": "Model kustom",
+      "sampleAirplane": "Pesawat — San Francisco",
+      "sampleShanghai": "Shanghai — pusat kota",
+      "modelFileHint": "Pilih file GLB atau glTF mandiri. Model lokal disematkan dalam proyek yang disimpan sehingga ukuran proyek bertambah.",
+      "modelExternalResources": "Model ini merujuk ke file terpisah. Ekspor sebagai GLB dengan tekstur dan buffer tersemat, lalu coba lagi.",
+      "modelTooLarge": "Model ini melebihi batas {{limit}} MB untuk disematkan dalam proyek. Hosting model tersebut lalu tambahkan melalui URL.",
+      "modelFileError": "Tidak dapat membaca model ini. Pilih file glTF 2.0 atau GLB yang valid."
     },
-    "nonGeographicCoordinates": "Koordinat pada {{names}} bukan bujur/lintang, sehingga tidak ada yang digambar di peta. CRS salah — proyeksikan ulang data (atau perbaiki .prj-nya) lalu muat kembali."
+    "nonGeographicCoordinates": "Koordinat pada {{names}} bukan bujur/lintang, sehingga tidak ada yang digambar di peta. CRS salah — proyeksikan ulang data (atau perbaiki .prj-nya) lalu muat kembali.",
+    "pmtiles": {
+      "errorUrl": "Masukkan URL PMTiles HTTP atau HTTPS yang valid.",
+      "errorMlt": "ArcGIS memerlukan ubin vektor MVT, bukan MLT."
+    },
+    "lidar": {
+      "errorUrl": "Masukkan URL LiDAR HTTP atau HTTPS yang valid."
+    },
+    "zarr": {
+      "errorUrl": "Masukkan URL Zarr HTTP atau HTTPS yang valid.",
+      "errorColorLimits": "Batas warna maksimum harus lebih besar dari minimum."
+    },
+    "raster": {
+      "errorSource": "Masukkan URL GeoTIFF atau pilih berkas."
+    },
+    "wcs": {
+      "coverage": "Cakupan",
+      "retrieve": "Ambil cakupan",
+      "select": "Pilih cakupan",
+      "extent": "Gunakan batas cakupan",
+      "width": "Lebar (piksel)",
+      "height": "Tinggi (piksel)",
+      "hint": "Mengunduh GeoTIFF dalam EPSG:4326 dengan dimensi piksel yang dipilih. Nilai dapat disampel ulang. Simpan raster untuk mempertahankan data yang diunduh.",
+      "errors": {
+        "xml": "Layanan mengembalikan XML yang tidak valid.",
+        "version": "Sumber ini memerlukan WCS 1.0.0. Layanan mengembalikan respons yang tidak didukung.",
+        "empty": "Tidak ada cakupan yang cocok.",
+        "format": "Cakupan tidak menawarkan keluaran GeoTIFF.",
+        "crs": "Cakupan harus mendukung EPSG:4326 untuk permintaan dan keluaran.",
+        "size": "Pilih dimensi 1 hingga 4096 piksel. Unduhan dibatasi hingga 128 MB.",
+        "metadata": "Layanan mengembalikan metadata lebih banyak daripada yang dapat dimuat GeoLibre. Respons metadata dibatasi hingga 32 MB.",
+        "response": "Layanan tidak mengembalikan GeoTIFF yang valid.",
+        "bounds": "Masukkan kotak yang valid: barat/timur antara -180 hingga 180, selatan/utara antara -90 hingga 90, dengan barat < timur dan selatan < utara.",
+        "url": "Masukkan URL layanan WCS."
+      }
+    }
   },
   "offline": {
     "title": "Unduh Area Offline",
@@ -1318,6 +1416,11 @@
     "errorFallback": "Tidak dapat membagikan proyek.",
     "usernameRequired": "Atur nama pengguna pada akun {{shareHost}} Anda sebelum membagikan. Buka pengaturan akun Anda untuk memilihnya, lalu coba lagi.",
     "openAccountSettings": "Buka pengaturan akun",
+    "shareAnyway": "Tetap bagikan",
+    "localWarningTitle_other": "{{count}} layer akan hilang dari peta yang dibagikan",
+    "localWarningBody": "{{shareHost}} hanya menyimpan file proyek, tidak pernah file di komputer Anda. Penerima membuka proyek di browser yang tidak dapat membaca disk Anda, sehingga layer ini akan kosong bagi semua orang kecuali Anda.",
+    "localWarningAdvice": "Untuk menyertakannya, konversikan raster ke Cloud Optimized GeoTIFF dan vektor ke PMTiles atau GeoParquet, hosting file di server HTTPS publik seperti GitHub atau Hugging Face, tambahkan ke peta melalui URL, lalu bagikan lagi. Layer vektor lokal berukuran kecil disematkan ke proyek secara otomatis.",
+    "localWarningLearnMore": "Pelajari lebih lanjut",
     "readinessChecking": "Memeriksa apakah penerima dapat memuat data Anda…",
     "readinessUnavailable": "Pemeriksaan sumber data tidak dapat dijalankan.",
     "readinessAllReachable_other": "{{count}} sumber data tampaknya dapat dijangkau oleh penerima.",
@@ -1395,7 +1498,7 @@
   },
   "printLayout": {
     "title": "Tata Letak Cetak",
-    "description": "Susun peta siap cetak dengan judul, legenda, skala, dan penunjuk utara, lalu ekspor ke PNG atau PDF.",
+    "description": "Susun peta siap cetak dengan judul, legenda, skala, dan penunjuk utara, lalu ekspor ke PNG, PDF atau SVG.",
     "preview": "Pratinjau",
     "resizeControls": "Ubah ukuran panel kontrol",
     "resizeDialog": "Ubah ukuran dialog",
@@ -1403,6 +1506,7 @@
     "copyToClipboard": "Salin ke Papan Klip",
     "copied": "Tersalin",
     "exportPng": "Ekspor PNG",
+    "exportSvg": "Ekspor SVG",
     "exportPdf": "Ekspor PDF",
     "titleLabel": "Judul",
     "titlePlaceholder": "Judul peta",
@@ -1819,24 +1923,35 @@
     "noLayers": "Belum ada layer",
     "labelPlaceholder": "Label",
     "labelLabel": "Label untuk peta {{number}}",
+    "renderingEngineLabel": "Mesin render untuk peta {{number}}",
     "removePane": "Hapus peta {{number}}",
     "show3d": "Tampilkan peta {{number}} sebagai bola dunia 3D",
     "show2d": "Tampilkan peta {{number}} sebagai peta 2D",
     "only2d": "Hanya 2D",
-    "cesiumTokenHint": "Tambahkan token Cesium Ion di Pengaturan untuk medan dan citra Ion"
+    "only3d": "Hanya 3D",
+    "noMapbox": "Tanpa Mapbox",
+    "noArcgis": "Tanpa ArcGIS",
+    "cesiumTokenHint": "Tambahkan token Cesium Ion di <settingsLink>Pengaturan → Variabel lingkungan</settingsLink> untuk medan dan citra Ion"
   },
   "renderer": {
     "basemap": "Peta dasar",
     "imagery": "Citra",
     "projectBasemap": "Peta dasar proyek",
     "layerUnsupported": "Tidak dirender oleh bola dunia 3D",
+    "layerCesiumOnly": "Hanya dirender oleh bola dunia 3D",
+    "layerMapboxUnsupported": "Tidak dirender oleh mesin Mapbox",
+    "layerArcgisUnsupported": "Tidak dirender oleh mesin ArcGIS",
+    "layerArcgisViewUnsupported": "Tidak dirender dalam tampilan ArcGIS ini",
     "resetView": "Atur Ulang Tampilan",
     "scene3D": "Bola dunia 3D",
     "scene2D": "Peta 2D",
     "sceneColumbus": "Tampilan Columbus",
     "fullscreenEnter": "Layar penuh",
     "fullscreenExit": "Keluar dari layar penuh",
-    "fullscreenUnavailable": "Layar penuh tidak tersedia"
+    "fullscreenUnavailable": "Layar penuh tidak tersedia",
+    "mapboxTokenHint": "Tambahkan token akses Mapbox Anda di <settingsLink>Pengaturan → Variabel lingkungan</settingsLink> untuk menggunakan perender ini.",
+    "arcgisKeyHint": "Tambahkan kunci API ArcGIS di <settingsLink>Pengaturan → Variabel lingkungan</settingsLink> untuk gaya peta dasar Esri.",
+    "pluginUnsupported": "Plugin ini tidak mendukung mesin perender yang dipilih."
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "Salin koordinat ke papan klip",
@@ -2099,6 +2214,14 @@
       "cesiumTokenDescription": "Bola dunia 3D (panel tampilan terpisah) berfungsi tanpa token: bola dunia menampilkan peta dasar proyek. Token akses menambahkan Cesium World Terrain dan citra dunia Ion. Buat akun gratis di <tokenLink>ion.cesium.com/tokens</tokenLink>, salin token akses default Anda, dan tempelkan di bawah.",
       "cesiumTokenStorageNote": "Disimpan secara lokal di perangkat ini (bukan dalam file proyek, sehingga tidak pernah dibagikan) dan hanya dikirim ke Cesium Ion. Pada build web, token ini berbagi penyimpanan browser yang sama dengan data situs lainnya.",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "Token Mapbox",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "Untuk menggunakan Mapbox, tempel token akses dari <tokenLink>akun Mapbox Anda</tokenLink> di bawah.",
+      "mapboxTokenStorageNote": "Disimpan secara lokal di perangkat ini (bukan dalam file proyek, sehingga tidak pernah dibagikan) dan hanya dikirim ke Mapbox. Pada build web, token ini berbagi penyimpanan browser yang sama dengan data situs lainnya.",
+      "arcgisKeyTitle": "Kunci API ArcGIS",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "Perender ArcGIS berfungsi tanpa kunci: ia menampilkan peta dasar proyek dan layer Anda melalui ArcGIS Maps SDK for JavaScript yang dimuat dari CDN Esri. Kunci API menambahkan gaya peta dasar Esri (Streets, Imagery, Topographic, …). Buat kunci di <keyLink>kredensial pengembang</keyLink> pada akun ArcGIS Anda dengan hak istimewa Basemaps, lalu tempelkan di bawah.",
+      "arcgisKeyStorageNote": "Disimpan secara lokal di perangkat ini (bukan dalam file proyek, sehingga tidak pernah dibagikan) dan hanya dikirim ke Esri. Pada build web, kunci ini berbagi penyimpanan browser yang sama dengan data situs lainnya.",
       "variablesTitle": "Variabel lingkungan",
       "variablesCount_other": "{{count}} variabel runtime diaktifkan.",
       "secretsWarning": "Nilai disimpan dalam teks biasa pada file proyek dan dapat terekspos saat proyek dibagikan. Hindari menaruh rahasia di sini kecuali file proyek tetap privat.",
@@ -2196,6 +2319,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "Peristiwa Bumi langsung berbasis waktu dari umpan data publik.",
+      "globeOnly": "Umpan globe langsung dirender pada globe Cesium. Beralihlah ke globe 3D untuk melihatnya.",
+      "groups": {
+        "movement": "Pergerakan",
+        "cameras": "Kamera",
+        "infrastructure": "Infrastruktur",
+        "events": "Peristiwa",
+        "utilities": "Utilitas"
+      },
+      "earthquakes": "Gempa bumi",
+      "spaceMissions": "Misi Antariksa (30 hari)",
+      "activeFires": "Kebakaran Aktif (24 jam)",
+      "satellites": "Satelit",
+      "flights": "Penerbangan Langsung",
+      "militaryFlights": "Penerbangan Militer",
+      "bikeShare": "Berbagi Sepeda",
+      "transit": "Transportasi Umum Langsung",
+      "streetTraffic": "Lalu Lintas Jalan Simulasi",
+      "mappedAlpr": "Kamera ALPR Terpetakan",
+      "cctv": "Kamera CCTV Publik",
+      "cctvPopup": {
+        "liveSnapshot": "Gambar langsung",
+        "provider": "Penyedia",
+        "attribution": "Atribusi",
+        "privacy": "Privasi"
+      },
+      "radio": "Stasiun Radio",
+      "datacenters": "Pusat Data",
+      "dams": "Bendungan",
+      "cables": "Kabel Bawah Laut",
+      "osmInfrastructure": "Infrastruktur OSM",
+      "loading": "Memperbarui…",
+      "updateFailed": "Pembaruan gagal",
+      "noneInView": "Tidak ditemukan fitur dalam tampilan saat ini untuk layer ini.",
+      "never": "Belum pernah",
+      "lastUpdated": "Terakhir diperbarui: {{time}}",
+      "speed": "Kecepatan",
+      "speedRealTime": "Waktu nyata (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "Katalog satelit padat",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "Katalog Starlink tidak dapat dimuat: {{error}}. Pilih untuk mencoba lagi.",
+      "denseDescription": "Tampilkan seluruh konstelasi Starlink sebagai titik ringan (tanpa label atau baris tabel)."
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "Proyek",
@@ -2289,6 +2462,7 @@
       "imperial": "Knot / kaki",
       "metric": "km/jam / meter",
       "bankCamera": "Miringkan cakrawala saat berbelok",
+      "bankCameraMapbox": "Mapbox GL tidak memiliki roll kamera, jadi cakrawala tetap datar di sini. Pesawat tetap miring dan berbelok.",
       "invertPitch": "Balik sumbu angguk",
       "knots": "kt",
       "kph": "km/jam",
@@ -2432,9 +2606,12 @@
       "georss": "Layer GeoRSS",
       "video": "Layer Video",
       "deckglViz": "Layer Deck.gl",
+      "cesiumIon": "Aset Cesium Ion",
+      "czml": "Adegan 3D Dinamis CZML",
       "gltfModel": "Model 3D (glTF)",
       "postgres": "Layer PostgreSQL",
-      "iceberg": "Layer Apache Iceberg"
+      "iceberg": "Layer Apache Iceberg",
+      "wcs": "Layer WCS"
     },
     "conversion": {
       "vectorToVector": "Vektor ke Vektor",
@@ -2689,6 +2866,8 @@
       "splitViewSync": "Sinkronkan tampilan",
       "renderingEngine": "Mesin render",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Lihat di Google Maps",
       "viewInGoogleEarth": "Lihat di Google Earth",
@@ -2839,6 +3018,7 @@
       "saveProjectAsTitle": "Simpan proyek sebagai",
       "saveProjectAsDesc": "Masukkan nama file. Proyek akan diunduh ke folder unduhan browser Anda saat Anda mengklik Simpan.",
       "embedVectorTitle": "Sematkan data vektor lokal?",
+      "embedEditedGeometryDesc": "Proyek ini berisi geometri yang telah diedit. Sematkan data vektor (sekitar {{size}}) untuk mempertahankannya. Tanpa penyematan, layer referensi dibuka kembali dengan geometri aslinya dan data lokal mungkin tidak tersedia.",
       "embedVectorDesc": "Proyek ini memiliki {{count}} layer vektor lokal yang dimuat dari komputer Anda. Browser tidak dapat membaca ulang layer ini saat proyek dibuka kembali, sehingga datanya harus disematkan dalam file proyek untuk dipulihkan. Menyematkan menambah sekitar {{size}} ke file.",
       "embedVectorDescDesktop": "Proyek ini memiliki {{count}} layer vektor lokal yang dimuat dari komputer Anda. Sematkan datanya agar proyek mandiri (menambah sekitar {{size}}), atau simpan referensi file yang dimuat ulang dari disk saat proyek dibuka kembali. Referensi menjaga file tetap kecil tetapi rusak jika file sumber kemudian dipindahkan atau dihapus.",
       "embedVectorDescMas": "Proyek ini memiliki {{count}} layer vektor lokal yang dimuat dari komputer Anda. Sandbox Mac App Store tidak dapat mempertahankan akses ke file tersebut setelah GeoLibre ditutup, sehingga datanya harus disematkan dalam file proyek agar dapat dipulihkan. Penyematan menambah sekitar {{size}} ke file.",
@@ -2896,6 +3076,8 @@
       "maplibre-gl-esri-wayback": "Citra Historis",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "Pengunduh OSM",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "Katalog STAC",
       "geolibre-planet-open-data": "Data Terbuka Planet",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -2907,6 +3089,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "Peta Dasar Carto Light",
       "geolibre-flight-simulator": "Simulator Penerbangan",
+      "gods-eye-view": "Pandangan Mahatahu",
       "geolibre-route-animation": "Animasi Rute",
       "geolibre-sun": "Simulasi Matahari",
       "maplibre-atmosphere-effects": "Efek Atmosfer",
@@ -3074,9 +3257,14 @@
     "openBuilder": "Pembuat ekspresi...",
     "invalidExpression": "Masukkan ekspresi boolean yang valid.",
     "select": "Pilih fitur",
+    "applyLayerFilter": "Filter layer",
+    "clearLayerFilter": "Bersihkan filter layer",
+    "layerFilteredHint": "Sebuah filter persisten sedang menyembunyikan sebagian fitur layer ini.",
+    "layerFilteredBothHint": "Sebuah filter persisten dan sebuah filter cepat sedang menyembunyikan sebagian fitur layer ini.",
     "noLayers": "Tambahkan layer vektor dengan fitur untuk membuat seleksi.",
     "needTwoLayers": "Pemilihan berdasarkan lokasi membutuhkan dua layer vektor dengan fitur.",
     "summary": "{{selected}} dari {{total}} fitur terpilih ({{matched}} cocok).",
+    "filterSummary": "Filter layer diterapkan: {{matched}} dari {{total}} fitur cocok.",
     "evaluationErrors": "{{count}} fitur tidak dapat dievaluasi dan tidak dicocokkan.",
     "unevaluableDisjoint": "{{count}} fitur dikecualikan karena geometrinya tidak dapat dievaluasi.",
     "tooManyPairs": "Perbandingan ini membutuhkan {{pairs}} pengujian pasangan fitur (batas {{limit}}). Gunakan Processing → GeoLibre → Vector → Select by location dengan mesin Sidecar sebagai gantinya.",
@@ -3532,10 +3720,14 @@
     "title": "Katalog STAC",
     "footprintLayerName": "Jejak pencarian STAC",
     "catalogSearch": "Temukan katalog publik di STAC Index",
+    "portolanCatalogSearch": "Temukan katalog publik di Portolan Registry",
     "catalogSearchPlaceholder": "Cari nama katalog…",
     "indexLoading": "Memuat STAC Index…",
+    "portolanIndexLoading": "Memuat Portolan Registry…",
     "indexUnavailable": "STAC Index tidak tersedia: masukkan URL",
+    "portolanIndexUnavailable": "Portolan Registry tidak tersedia: masukkan URL",
     "indexLoadFailed": "Tidak dapat memuat STAC Index",
+    "portolanIndexLoadFailed": "Tidak dapat memuat Portolan Registry",
     "urlLabel": "URL katalog atau API STAC",
     "connect": "Hubungkan",
     "connecting": "Menghubungkan ke STAC…",
@@ -4434,6 +4626,10 @@
       "errorStartSidecar": "Tidak dapat menjalankan sidecar GeoLibre.",
       "errorStopSidecar": "Tidak dapat menghentikan sidecar GeoLibre.",
       "noToolsFound": "Tidak ada alat yang ditemukan.",
+      "searchToolsByMeaning": "Cari alat atau jelaskan tugas",
+      "searchingByMeaning": "Mencari katalog berdasarkan makna",
+      "bestMatches": "Kecocokan terbaik",
+      "otherMatches": "Kecocokan lainnya",
       "noParameters": "Alat ini tidak memiliki parameter.",
       "noOutput": "Belum ada keluaran.",
       "enabled": "Aktif",
@@ -4508,6 +4704,10 @@
                 "inside": "Dalam (perkecil)",
                 "both": "Kedua sisi"
               }
+            },
+            "dissolve": {
+              "label": "Dissolve hasil",
+              "description": "Menggabungkan buffer menjadi satu fitur dan meleburkan tumpang tindih di antaranya. Bentuk gabungan tidak dimiliki fitur masukan mana pun, sehingga atribut dihapus; untuk melakukan dissolve berdasarkan atribut, jalankan alat Dissolve pada hasilnya."
             }
           }
         },
@@ -6320,6 +6520,7 @@
     "description": "Simpan, telusuri, dan terapkan gaya, simbol, preset label, dan gradasi warna yang dapat digunakan kembali di seluruh layer dan proyek.",
     "searchPlaceholder": "Cari gaya dan tag…",
     "presetsSection": "Preset bawaan",
+    "presetActions": "Aksi preset",
     "librarySection": "Pustaka saya",
     "projectSection": "Proyek ini",
     "empty": "Tidak ada gaya tersimpan yang cocok. Simpan gaya layer atau impor pustaka untuk memulai.",
@@ -6683,6 +6884,7 @@
     "footerDeck": "Perubahan berlaku langsung pada penataan gaya layer deck.gl DuckDB.",
     "footerMaplibre": "Perubahan berlaku langsung pada properti paint MapLibre.",
     "pluginPaintedFooter": "Layer ini digambar oleh pluginnya, yang menyediakan kontrol gaya tersendiri.",
+    "serviceStyledFooter": "Layer ini mempertahankan gaya bawaan layanannya; opasitas, urutan, rentang zoom, dan filter tetap berlaku.",
     "extrusion": {
       "color": "Warna ekstrusi",
       "opacity": "Opasitas ekstrusi",
@@ -6878,6 +7080,11 @@
       "invalidExpression": "Ekspresi tidak valid",
       "openBuilder": "Buka pembuat ekspresi",
       "showFeatureId": "Tampilkan baris id fitur",
+      "maxWidth": "Lebar popup (px)",
+      "maxWidthPlaceholder": "Bawaan",
+      "imageHeight": "Tinggi gambar (px)",
+      "imageHeightPlaceholder": "Bawaan",
+      "sizeHint": "Kosongkan salah satunya untuk memakai nilai bawaan. Gambar mempertahankan rasio aspeknya, jadi melebarkan popup itulah yang membuat foto dapat memakai tinggi tambahan.",
       "fields": "Bidang",
       "allFields": "Tidak ada bidang yang dipilih, jadi semua bidang yang terlihat ditampilkan dalam urutan asli datanya.",
       "addField": "Tambah bidang…",
@@ -6939,6 +7146,7 @@
     "allFieldsUsed": "Setiap bidang sudah memiliki filter",
     "removeAll": "Hapus semua",
     "clearAll": "Bersihkan filter",
+    "clearAllWithExpression": "Bersihkan filter dan ekspresi tersimpan",
     "clearOne": "Bersihkan filter ini",
     "clearOneNamed": "Bersihkan filter pada {{field}}",
     "remove": "Hapus filter",
@@ -7071,6 +7279,9 @@
     "saveEditsSuccess": "Menyimpan {{count}} fitur ke file sumber.",
     "saveEditsNoFeatures": "Layer ini tidak memiliki fitur untuk disimpan.",
     "saveEditsError": "Tidak dapat menyimpan pengeditan ke file sumber.",
+    "pendingTableDraftsBlocked": "Tabel atribut memiliki pengeditan yang belum disimpan dan tidak dapat diterapkan. Perbaiki atau batalkan, lalu coba lagi.",
+    "saveEditsToArcgis": "Simpan perubahan ke layanan ArcGIS",
+    "saveEditsArcgisSuccess": "Tersimpan ke ArcGIS: {{inserted}} ditambahkan, {{updated}} diperbarui, {{deleted}} dihapus.",
     "saveEditsToPostgis": "Simpan perubahan ke tabel PostGIS",
     "saveEditsPostgisSuccess": "Tersimpan ke {{table}}: {{inserted}} ditambahkan, {{updated}} diperbarui, {{deleted}} dihapus.",
     "saveEditsPostgisSkippedFields": "Bidang tanpa kolom tabel yang cocok tidak disimpan: {{fields}}.",
@@ -7113,6 +7324,8 @@
     "renameGroup": "Ganti nama grup",
     "moveGroupUp": "Pindahkan grup ke atas",
     "moveGroupDown": "Pindahkan grup ke bawah",
+    "sortGroupAscending": "Urutkan A ke Z",
+    "sortGroupDescending": "Urutkan Z ke A",
     "ungroupKeepLayers": "Bubarkan grup (pertahankan layer)",
     "deleteGroupAndLayers": "Hapus grup dan layer",
     "groupActions": "Aksi grup",
@@ -7228,7 +7441,20 @@
     "stretchLinear": "Linear",
     "stretchLog": "Logaritmik",
     "stretchSqrt": "Akar kuadrat",
+    "viewportStretch": "Peregangan viewport",
+    "viewportMinMax": "Min / maks viewport",
+    "viewportPercentile": "Persentil 5–95 viewport",
+    "viewportStddev": "Rata-rata viewport ± 2 simpangan baku",
+    "viewportApply": "Terapkan ke viewport",
+    "viewportStretching": "Membaca viewport…",
+    "viewportStretchApplied": "Peregangan viewport diterapkan",
+    "viewportAuto": "Perbarui otomatis saat peta bergerak",
+    "viewportStretchNoView": "Tampilan peta tidak tersedia.",
+    "viewportStretchNoValues": "Tidak ada nilai raster yang ditemukan di viewport.",
+    "viewportStretchNoRange": "Nilai viewport tidak membentuk rentang.",
+    "viewportStretchMoved": "Peta bergerak sebelum pembacaan selesai. Terapkan lagi.",
     "index": "Indeks",
+    "opacityClasses": "Kelas opasitas",
     "classifyToggle": "Klasifikasikan ke kelas diskret",
     "method": "Metode",
     "methodEqualInterval": "Interval sama",
@@ -7784,5 +8010,77 @@
     "catalogHuc12pp": "Titik keluaran HUC12",
     "catalogNmwdiSt": "Situs air New Mexico",
     "catalogFlowlines": "Garis aliran NHDPlus"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "Gunakan URL tileset.json 3D Tiles pada tampilan ArcGIS ini. Ubin Google Photorealistic dan I3S memerlukan mesin perender lain.",
+      "globeGoogleKeyRequired": "Google Photorealistic 3D Tiles memerlukan kunci API Google Maps di Pengaturan agar dapat dimuat di globe."
+    },
+    "geolibre-osm-downloader": {
+      "title": "OSM Downloader",
+      "hint": "Unduh fitur OpenStreetMap dari area peta saat ini menggunakan public Overpass API.",
+      "attribution": "Data © OpenStreetMap contributors, tersedia di bawah ODbL.",
+      "featureType": "Jenis fitur",
+      "presetBuildings": "Bangunan",
+      "presetRoads": "Jalan",
+      "presetAmenities": "Fasilitas",
+      "presetWaterways": "Sungai",
+      "presetLanduse": "Penggunaan lahan",
+      "presetCustom": "Tag kustom",
+      "presetAll": "Semua fitur yang ditandai",
+      "tagKey": "Kunci tag",
+      "tagValue": "Nilai tag",
+      "tagKeyPlaceholder": "contoh: shop",
+      "tagValuePlaceholder": "opsional, contoh: bakery",
+      "west": "Barat",
+      "south": "Selatan",
+      "east": "Timur",
+      "north": "Utara",
+      "useMapExtent": "Gunakan batas peta",
+      "download": "Unduh data OSM",
+      "ready": "Pilih area dan jenis fitur.",
+      "exportGeoJson": "Simpan GeoJSON",
+      "mapUnavailable": "Batas peta tidak tersedia saat ini.",
+      "extentApplied": "Batas peta diterapkan.",
+      "downloading": "Mengunduh dari OpenStreetMap…",
+      "noFeatures": "Tidak ada fitur yang cocok ditemukan di area ini.",
+      "error": "Tidak dapat mengunduh data OSM: {{message}}",
+      "added": "Ditambahkan {{count}} fitur ke peta."
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "Cari cakupan tile IGN LiDAR HD untuk area peta saat ini, tambahkan tile ke peta sebagai point cloud, atau unduh file COPC LAZ-nya dari server IGN.",
+      "attribution": "Data © IGN — LiDAR HD, dipublikasikan di bawah Licence Ouverte 2.0.",
+      "west": "Barat",
+      "south": "Selatan",
+      "east": "Timur",
+      "north": "Utara",
+      "useMapExtent": "Gunakan batas peta",
+      "search": "Cari tile",
+      "addToMap": "Tambahkan ke peta",
+      "download": "Unduh",
+      "ready": "Pilih area dan cari tile LiDAR HD.",
+      "mapUnavailable": "Batas peta tidak tersedia saat ini.",
+      "extentApplied": "Batas peta diterapkan.",
+      "searching": "Mencari tile IGN LiDAR HD…",
+      "noTiles": "Tidak ada tile LiDAR HD yang ditemukan di area ini.",
+      "noDownload": "tidak ada point cloud yang dipublikasikan",
+      "layerName": "Tile IGN LiDAR HD",
+      "found": "Ditemukan {{count}} tile.",
+      "foundTruncated": "Menampilkan {{count}} tile pertama dari {{matched}}. Persempit area pencarian untuk melihat sisanya.",
+      "addedToMap": "{{name}} ditambahkan ke peta.",
+      "alreadyOnMap": "{{name}} sudah ada di peta.",
+      "unsupportedRenderer": "Point cloud memerlukan renderer MapLibre atau Mapbox.",
+      "addError": "Tidak dapat menambahkan {{name}} ke peta: {{message}}",
+      "error": "Tidak dapat mencari tile IGN LiDAR HD: {{message}}",
+      "selectAll": "Pilih semua",
+      "selectTile": "Pilih {{name}}",
+      "addSelectedToMap": "Tambahkan yang dipilih ke peta",
+      "addSelectedToMapCount": "Tambahkan {{count}} yang dipilih ke peta",
+      "addingSelected": "Menambahkan {{count}} tile ke peta…",
+      "addedSelectedCount": "{{count}} tile ditambahkan ke peta.",
+      "alreadyOnMapCountPlural": "{{count}} tile sudah ada di peta.",
+      "addSelectedFailedCount": "{{count}} tile tidak dapat ditambahkan."
+    }
   }
 }

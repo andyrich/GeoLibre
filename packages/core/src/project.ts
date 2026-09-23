@@ -60,6 +60,7 @@ import {
 import { DEFAULT_LAYER_GROUP_OPACITY, normalizeGroupContiguity } from "./layer-groups";
 import { normalizeStyleLibraryEntries } from "./style-library";
 import { normalizeLayerCapabilities } from "./capabilities";
+import { validateMapExpression } from "./expressions";
 import {
   createDefaultPrintLayout,
   isDefaultPrintLayout,
@@ -112,15 +113,17 @@ export function createEmptyProject(
     layers: [],
     layerGroups: [],
     styles: {},
-    preferences: options.ellipsoidId
-      ? {
-          ...DEFAULT_PROJECT_PREFERENCES,
-          map: {
-            ...DEFAULT_PROJECT_PREFERENCES.map,
-            ellipsoidId: getEllipsoid(options.ellipsoidId).id,
-          },
-        }
-      : DEFAULT_PROJECT_PREFERENCES,
+    // A copy, never the shared constant: a caller that edits the new project's
+    // preferences — `project.preferences.map.cesiumBasemap = …` — would
+    // otherwise rewrite the app-wide defaults for the rest of the process, and
+    // every later "what is the default" read would answer with its edit.
+    preferences: {
+      ...DEFAULT_PROJECT_PREFERENCES,
+      map: {
+        ...DEFAULT_PROJECT_PREFERENCES.map,
+        ...(options.ellipsoidId ? { ellipsoidId: getEllipsoid(options.ellipsoidId).id } : {}),
+      },
+    },
     legend: { ...DEFAULT_LEGEND_CONFIG },
     comments: [],
     metadata: {},
@@ -251,7 +254,14 @@ function serializeProjectValue(
  * @returns The file contents to write.
  */
 export function serializeProject(project: GeoLibreProject): string {
-  return serializeProjectValue(project, 0, "", new Set()) ?? "null";
+  return (
+    serializeProjectValue(
+      { ...project, layers: project.layers.map(withoutLocalRasterBytes) },
+      0,
+      "",
+      new Set(),
+    ) ?? "null"
+  );
 }
 
 export function parseProject(json: string): GeoLibreProject {
@@ -325,7 +335,7 @@ export function parseProject(json: string): GeoLibreProject {
     // The primary renderer is independent of the grid, so it sits outside the
     // `mapLayout` block above: a 1x1 Cesium project has no grid to persist.
     ...(normalizePrimaryRenderer(data.primaryRenderer)
-      ? { primaryRenderer: "cesium" as const }
+      ? { primaryRenderer: normalizePrimaryRenderer(data.primaryRenderer)! }
       : {}),
     ...(styleLibrary.length > 0 ? { styleLibrary } : {}),
     ...(parsedComments.length > 0 ? { comments: parsedComments } : {}),
@@ -931,11 +941,12 @@ export function normalizeMapLayout(value: unknown): MapGridLayout | null {
  * Returns null for the default 2D map — absent, unknown, or an explicit
  * `"maplibre"` — because the field is only written when it is not the default,
  * so a MapLibre project serializes byte-identically to before this existed.
- * The return type is narrowed to `"cesium" | null` rather than the full
- * {@link MapRendererKind} for that reason: `"maplibre"` is never a result.
+ * The return type is narrowed to `"cesium" | "mapbox" | "arcgis" | null` rather
+ * than the full {@link MapRendererKind} for that reason: `"maplibre"` is never a
+ * result.
  */
-export function normalizePrimaryRenderer(value: unknown): "cesium" | null {
-  return value === "cesium" ? "cesium" : null;
+export function normalizePrimaryRenderer(value: unknown): "cesium" | "mapbox" | "arcgis" | null {
+  return value === "cesium" || value === "mapbox" || value === "arcgis" ? value : null;
 }
 
 /**
@@ -957,7 +968,10 @@ export function normalizeSecondaryMapViews(value: unknown): SecondaryMapView[] |
     // Only the known engine ids survive; an absent/unknown value is omitted so
     // the pane defaults to the 2D map (back-compat with pre-globe projects).
     const viewKind =
-      candidate.viewKind === "cesium" || candidate.viewKind === "maplibre"
+      candidate.viewKind === "cesium" ||
+      candidate.viewKind === "maplibre" ||
+      candidate.viewKind === "mapbox" ||
+      candidate.viewKind === "arcgis"
         ? candidate.viewKind
         : undefined;
     views.push({
@@ -1221,6 +1235,17 @@ function normalizeProjectPreferences(preferences: unknown): ProjectPreferences {
         (map as Partial<ProjectPreferences["map"]>).showPointerElevation,
         DEFAULT_PROJECT_PREFERENCES.map.showPointerElevation,
       ),
+      // Missing means follow the saved project basemap. Do not reapply the
+      // new-project Streets default after a user has selected a shared style.
+      mapboxStyleUrl:
+        normalizeString((map as Partial<ProjectPreferences["map"]>).mapboxStyleUrl) || undefined,
+      arcgisBasemap:
+        normalizeString((map as Partial<ProjectPreferences["map"]>).arcgisBasemap) || undefined,
+      // Missing means follow the saved project basemap, as it does for
+      // `mapboxStyleUrl` above: a project written before this field existed
+      // chose nothing, and reapplying the new-project default would repaint
+      // its globe with Ion imagery the next time it opened. New projects get
+      // the default from `DEFAULT_PROJECT_PREFERENCES` and save it explicitly.
       cesiumBasemap: normalizeCesiumBasemap(
         (map as Partial<ProjectPreferences["map"]>).cesiumBasemap,
       ),
@@ -1439,13 +1464,27 @@ function isPlainObject(value: object): boolean {
   return prototype === Object.prototype || prototype === null;
 }
 
+/** Browser byte URLs belong to the live session, never a saved project. */
+function withoutLocalRasterBytes(layer: GeoLibreLayer): GeoLibreLayer {
+  if (layer.metadata?.localBytesUrl === undefined) return layer;
+  const { localBytesUrl: _localBytesUrl, ...metadata } = layer.metadata;
+  return { ...layer, metadata };
+}
+
 function normalizeLayer(layer: GeoLibreLayer): GeoLibreLayer {
+  layer = withoutLocalRasterBytes(layer);
   // `capabilities` is split off the spread rather than overwritten: a raw value
   // that normalizes to nothing (`{}`, an array, a string, an object with no
   // boolean flag) must not survive into the normalized layer and be written
   // back out on the next save.
-  const { capabilities: rawCapabilities, ...rest } = layer;
+  const { capabilities: rawCapabilities, filterExpression: rawFilterExpression, ...rest } = layer;
   const capabilities = normalizeLayerCapabilities(rawCapabilities);
+  const filterExpression =
+    Array.isArray(rawFilterExpression) &&
+    rawFilterExpression.length > 0 &&
+    validateMapExpression(JSON.stringify(rawFilterExpression), { expectedType: "boolean" }).ok
+      ? rawFilterExpression
+      : undefined;
   return {
     ...rest,
     style: { ...DEFAULT_LAYER_STYLE, ...layer.style },
@@ -1454,6 +1493,7 @@ function normalizeLayer(layer: GeoLibreLayer): GeoLibreLayer {
     metadata: layer.metadata ?? {},
     source: layer.source ?? {},
     ...(capabilities ? { capabilities } : {}),
+    ...(filterExpression ? { filterExpression } : {}),
   };
 }
 
@@ -1654,7 +1694,7 @@ export function projectFromStore(state: {
     // a single-pane Cesium project persists `primaryRenderer` with no
     // `mapLayout`, and a MapLibre project writes neither.
     ...(normalizePrimaryRenderer(state.primaryRenderer)
-      ? { primaryRenderer: "cesium" as const }
+      ? { primaryRenderer: normalizePrimaryRenderer(state.primaryRenderer)! }
       : {}),
     ...(styleLibrary.length > 0 ? { styleLibrary } : {}),
     ...(comments.length > 0 ? { comments } : {}),
@@ -1678,6 +1718,14 @@ function hasRestorableSourceUrl(layer: GeoLibreLayer): boolean {
 }
 
 function prepareLayerForSave(layer: GeoLibreLayer): GeoLibreLayer {
+  layer = withoutLocalRasterBytes(layer);
+  // This flag describes unsaved changes to the live source, not persisted
+  // project state. A reference-only save reloads the original geometries;
+  // carrying the flag into that project would warn about nonexistent edits.
+  if (layer.metadata.geometryEdited !== undefined) {
+    const { geometryEdited: _geometryEdited, ...metadata } = layer.metadata;
+    layer = { ...layer, metadata };
+  }
   // The live time filter is derived from the Time Slider's current date, so it
   // is transient: strip it before saving so a reopened project never starts
   // with a stale time-window filter hiding most of a layer's features. The
@@ -1690,6 +1738,24 @@ function prepareLayerForSave(layer: GeoLibreLayer): GeoLibreLayer {
   if (layer.embedFilter !== undefined) {
     const { embedFilter: _embedFilter, ...rest } = layer;
     layer = rest;
+  }
+
+  // Some live plugin layers publish a large in-memory row model solely for
+  // the Attribute Table and rebuild it from their feed on activation. Keeping
+  // those rows in the store makes them queryable; embedding them in every
+  // project/autosave would persist stale positions and can cross the history
+  // snapshot ceiling.
+  if (layer.geojson && layer.metadata.transientGeojson === true) {
+    const { geojson: _geojson, ...rest } = layer;
+    layer = rest;
+  }
+
+  // Live CZML feeds likewise rebuild their renderer payload on activation.
+  // Persisting thousands of packets in every autosave duplicates the feed,
+  // stores stale positions, and can exceed the history snapshot limit.
+  if (layer.source.czmlData !== undefined && layer.metadata.transientCzml === true) {
+    const { czmlData: _czmlData, ...source } = layer.source;
+    layer = { ...layer, source };
   }
 
   // External native layers that restore their features from a source URL keep
@@ -1747,11 +1813,21 @@ function prepareLayerForSave(layer: GeoLibreLayer): GeoLibreLayer {
   const metadata = { ...layer.metadata };
   delete metadata.resolvedUrl;
 
+  // The collapse below rewinds a resolved short URL (or a desktop protocol URL)
+  // back to what the user typed, because those tile URLs are not portable. A
+  // TileJSON layer is the exception: `tiles` holds the document's own https
+  // templates, which are portable, while its `originalUrl` is the *document*
+  // URL and carries no {z}/{x}/{y}. Collapsing onto it would leave the saved
+  // layer unable to request a tile until a re-fetch succeeds — and
+  // `resolveProjectXyzLayers` keeps the on-disk layer when the document is
+  // unreachable, so an offline reopen would strand it. Rewind only `url`.
+  const tiles = typeof layer.metadata.tilejsonUrl === "string" ? {} : { tiles: [originalUrl] };
+
   return {
     ...layer,
     source: {
       ...layer.source,
-      tiles: [originalUrl],
+      ...tiles,
       url: originalUrl,
     },
     metadata,

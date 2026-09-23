@@ -123,6 +123,9 @@ export const OS_ENV_VAR_NAMES: readonly string[] = [
   "OPENAI_COMPATIBLE_MODEL",
   // Web-search tool (Tavily).
   "TAVILY_API_KEY",
+  // TypeSafe fast path (assistant/fast-path.ts). Optional: without it the
+  // assistant simply routes every request through the model as before.
+  "JEV_API_KEY",
 ];
 
 /**
@@ -173,6 +176,10 @@ export interface RuntimeEnvSources {
   geocoderEnv: Record<string, string>;
   /** The device-local Cesium Ion token as `VITE_CESIUM_TOKEN`, or empty. */
   cesiumEnv: Record<string, string>;
+  /** Device-local Mapbox token; explicit project entries still win. */
+  mapboxEnv?: Record<string, string>;
+  /** Device-local ArcGIS API key as `VITE_ARCGIS_API_KEY`; project entries still win. */
+  arcgisEnv?: Record<string, string>;
   /** The project's explicit Environment variables. Highest precedence. */
   projectEnv: Record<string, string>;
 }
@@ -193,6 +200,8 @@ export function mergeRuntimeEnv({
   aiEnv,
   geocoderEnv,
   cesiumEnv,
+  mapboxEnv,
+  arcgisEnv,
   projectEnv,
 }: RuntimeEnvSources): RuntimeEnv {
   return {
@@ -200,6 +209,8 @@ export function mergeRuntimeEnv({
     ...aiEnv,
     ...geocoderEnv,
     ...cesiumEnv,
+    ...mapboxEnv,
+    ...arcgisEnv,
     ...projectEnv,
   };
 }
@@ -267,11 +278,23 @@ function browserOrigin(): string | undefined {
   return origin && origin !== "null" ? origin : undefined;
 }
 
-function managedProxyBaseUrl(proxyUrl: string, baseOrigin?: string): string {
-  let normalized = proxyUrl.trim().replace(/\/+$/, "");
+/**
+ * Absolutize a configured proxy path against the page origin.
+ *
+ * A same-origin `/path` form is what a reverse proxy in front of the app
+ * configures, and Tauri's native HTTP client cannot resolve a relative URL, so
+ * it has to become absolute before it reaches either transport.
+ */
+function managedProxyPath(proxyUrl: string, baseOrigin?: string): string {
+  const normalized = proxyUrl.trim().replace(/\/+$/, "");
   if (baseOrigin && normalized.startsWith("/")) {
-    normalized = new URL(normalized, baseOrigin).toString().replace(/\/+$/, "");
+    return new URL(normalized, baseOrigin).toString().replace(/\/+$/, "");
   }
+  return normalized;
+}
+
+function managedProxyBaseUrl(proxyUrl: string, baseOrigin?: string): string {
+  const normalized = managedProxyPath(proxyUrl, baseOrigin);
   return normalized.endsWith("/v1") ? normalized : `${normalized}/v1`;
 }
 
@@ -284,6 +307,13 @@ export function readBuildTimeAssistantEnv(
 ): RuntimeEnv {
   if (!viteEnv) return {};
   const result: RuntimeEnv = {};
+  // Routing endpoint for the assistant's fast path. Separate from the chat
+  // proxy because the two need not be the same service: the dev server proxies
+  // only routing, and a deployment may add routing without moving chat.
+  const fastPathUrl = viteEnv.VITE_GEOLIBRE_FAST_PATH_URL?.trim().replace(/\/+$/, "");
+  if (fastPathUrl) {
+    result.GEOLIBRE_FAST_PATH_URL = managedProxyPath(fastPathUrl, baseOrigin);
+  }
   const proxyUrl = viteEnv.VITE_GEOLIBRE_AI_URL?.trim().replace(/\/+$/, "");
   if (proxyUrl) {
     result.OPENAI_COMPATIBLE_BASE_URL = managedProxyBaseUrl(proxyUrl, baseOrigin);

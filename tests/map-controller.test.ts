@@ -3,6 +3,7 @@ import { afterEach, describe, it } from "node:test";
 import * as maplibregl from "maplibre-gl";
 import {
   DEFAULT_LAYER_STYLE,
+  DEFAULT_PROJECT_PREFERENCES,
   BLANK_BASEMAP,
   setActiveEllipsoidId,
   type GeoLibreLayer,
@@ -34,6 +35,12 @@ interface FakeMap {
   calls: { method: string; args: unknown[] }[];
   setDataCalls: { id: string; data: unknown }[];
   queueRenderedFeatures: (features: unknown[]) => void;
+  /** Move the camera without firing anything, as a jump before a sync would. */
+  setZoom: (zoom: number) => void;
+  /** Whether `isMoving()` reports a camera animation or gesture in flight. */
+  setMoving: (moving: boolean) => void;
+  /** Fire a map event at every handler the controller registered for it. */
+  emit: (event: string, payload?: unknown) => void;
 }
 
 /**
@@ -54,7 +61,10 @@ function makeFakeMap(initialBasemapLayers: string[] = ["basemap-bg"]): {
   const calls: { method: string; args: unknown[] }[] = [];
   const setDataCalls: { id: string; data: unknown }[] = [];
   const images = new Set<string>();
+  const handlers = new Map<string, Set<(event: unknown) => void>>();
   let pendingRenderedFeatures: unknown[] = [];
+  let zoom = 4;
+  let moving = false;
 
   for (const id of initialBasemapLayers) {
     // Background layers participate in basemap visibility/opacity sync.
@@ -176,7 +186,7 @@ function makeFakeMap(initialBasemapLayers: string[] = ["basemap-bg"]): {
       getEast: () => -80,
       getNorth: () => 50,
     }),
-    getZoom: () => 4,
+    getZoom: () => zoom,
     getBearing: () => 0,
     getPitch: () => 0,
     getProjection: () => ({ type: "mercator" }),
@@ -186,6 +196,18 @@ function makeFakeMap(initialBasemapLayers: string[] = ["basemap-bg"]): {
     jumpTo: record("jumpTo"),
     dragPan: { isActive: () => false },
     dragRotate: { isActive: () => false },
+    // Preference setters. Real MapLibre clamps the camera inside several of
+    // these; the fake only records them, so a test that cares about the camera
+    // asserts on jumpTo.
+    getMinZoom: () => 0,
+    setMinZoom: record("setMinZoom"),
+    setMaxZoom: record("setMaxZoom"),
+    setMaxPitch: record("setMaxPitch"),
+    setRenderWorldCopies: record("setRenderWorldCopies"),
+    setMaxBounds: record("setMaxBounds"),
+    setTransformConstrain: record("setTransformConstrain"),
+    setProjection: record("setProjection"),
+    isMoving: () => moving,
     flyTo: record("flyTo"),
     fitBounds: record("fitBounds"),
     cameraForBounds: (...args: unknown[]) => {
@@ -194,9 +216,23 @@ function makeFakeMap(initialBasemapLayers: string[] = ["basemap-bg"]): {
     },
     addControl: record("addControl"),
     removeControl: record("removeControl"),
-    once: () => {},
-    on: () => {},
-    off: () => {},
+    once: (event: string, handler: (event: unknown) => void) => {
+      const wrapped = (payload: unknown) => {
+        handlers.get(event)?.delete(wrapped);
+        handler(payload);
+      };
+      const existing = handlers.get(event) ?? new Set();
+      existing.add(wrapped);
+      handlers.set(event, existing);
+    },
+    on: (event: string, handler: (event: unknown) => void) => {
+      const existing = handlers.get(event) ?? new Set();
+      existing.add(handler);
+      handlers.set(event, existing);
+    },
+    off: (event: string, handler: (event: unknown) => void) => {
+      handlers.get(event)?.delete(handler);
+    },
   };
 
   const fake: FakeMap = {
@@ -207,6 +243,15 @@ function makeFakeMap(initialBasemapLayers: string[] = ["basemap-bg"]): {
     setDataCalls,
     queueRenderedFeatures: (features) => {
       pendingRenderedFeatures = features;
+    },
+    setZoom: (next) => {
+      zoom = next;
+    },
+    setMoving: (next) => {
+      moving = next;
+    },
+    emit: (event, payload = { type: event }) => {
+      for (const handler of [...(handlers.get(event) ?? [])]) handler(payload);
     },
   };
   return { map, fake };
@@ -533,6 +578,234 @@ describe("MapController.syncLayers reconciliation", () => {
     );
   });
 
+  it("filters inline point data before building clusters", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const layer = pointLayer(
+      "filtered-clusters",
+      { filterExpression: ["==", ["get", "continent"], "Europe"] },
+      { pointRenderer: "cluster" },
+    );
+    layer.geojson = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { continent: "Europe" },
+          geometry: { type: "Point", coordinates: [0, 0] },
+        },
+        {
+          type: "Feature",
+          properties: { continent: "Asia" },
+          geometry: { type: "Point", coordinates: [100, 0] },
+        },
+      ],
+    };
+
+    controller.syncLayers([layer]);
+
+    const data = fake.sources.get(srcId(layer.id))?.data as GeoJSON.FeatureCollection;
+    assert.deepEqual(
+      data.features.map((feature) => feature.properties?.continent),
+      ["Europe"],
+    );
+  });
+
+  it("reuses the clustered filter result and re-derives it when the filter changes", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const geojson: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { continent: "Europe" },
+          geometry: { type: "Point", coordinates: [0, 0] },
+        },
+        {
+          type: "Feature",
+          properties: { continent: "Asia" },
+          geometry: { type: "Point", coordinates: [100, 0] },
+        },
+      ],
+    };
+    const filteredBy = (continent: string) => {
+      const layer = pointLayer(
+        "cluster-cache",
+        { filterExpression: ["==", ["get", "continent"], continent] },
+        { pointRenderer: "cluster" },
+      );
+      layer.geojson = geojson;
+      return layer;
+    };
+    const sourceData = () =>
+      fake.sources.get(srcId("cluster-cache"))?.data as GeoJSON.FeatureCollection;
+    const continents = () => sourceData().features.map((f) => f.properties?.continent);
+
+    controller.syncLayers([filteredBy("Europe")]);
+    const first = sourceData();
+    controller.syncLayers([filteredBy("Europe")]);
+    assert.equal(sourceData(), first, "an unchanged filter keeps a stable data reference");
+
+    // Only the current filter is cached, so switching away and back must
+    // re-derive the result rather than serve a stale or missing entry.
+    controller.syncLayers([filteredBy("Asia")]);
+    assert.deepEqual(continents(), ["Asia"]);
+    controller.syncLayers([filteredBy("Europe")]);
+    assert.deepEqual(continents(), ["Europe"]);
+  });
+
+  it("re-derives a zoom-dependent clustered filter as the camera moves", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const geojson: GeoJSON.FeatureCollection = {
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          properties: { name: "a" },
+          geometry: { type: "Point", coordinates: [0, 0] },
+        },
+        {
+          type: "Feature",
+          properties: { name: "b" },
+          geometry: { type: "Point", coordinates: [10, 0] },
+        },
+      ],
+    };
+    // MapLibre clusters at the source, so this filter is applied to the source
+    // data rather than by the renderer: nothing re-evaluates it against the
+    // live camera unless the controller resyncs.
+    const layer = pointLayer(
+      "zoom-clusters",
+      { filterExpression: [">=", ["zoom"], 8] },
+      { pointRenderer: "cluster" },
+    );
+    layer.geojson = geojson;
+    const featureCount = () =>
+      (fake.sources.get(srcId("zoom-clusters"))?.data as GeoJSON.FeatureCollection).features.length;
+
+    fake.setZoom(4);
+    controller.syncLayers([layer]);
+    assert.equal(featureCount(), 0, "below the threshold the filter hides both points");
+
+    fake.setZoom(10);
+    fake.emit("zoomend");
+    assert.equal(featureCount(), 2, "crossing the threshold brings them back");
+
+    fake.setZoom(3);
+    fake.emit("zoomend");
+    assert.equal(featureCount(), 0, "and crossing back hides them again");
+  });
+
+  it("leaves no zoom listener behind for a filter that does not read the zoom", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const clustered = (patch: Partial<GeoLibreLayer>) => {
+      const layer = pointLayer("plain-clusters", patch, { pointRenderer: "cluster" });
+      layer.geojson = {
+        type: "FeatureCollection",
+        features: [
+          {
+            type: "Feature",
+            properties: { keep: true },
+            geometry: { type: "Point", coordinates: [0, 0] },
+          },
+        ],
+      };
+      return layer;
+    };
+
+    controller.syncLayers([clustered({ filterExpression: ["==", ["get", "keep"], true] })]);
+    const before = fake.calls.length;
+    fake.emit("zoomend");
+    assert.equal(fake.calls.length, before, "no resync for a zoom-independent filter");
+
+    // Adding one attaches the listener; dropping it again detaches.
+    controller.syncLayers([clustered({ filterExpression: [">=", ["zoom"], 8] })]);
+    fake.setZoom(9);
+    fake.emit("zoomend");
+    assert.ok(fake.calls.length > before, "a zoom-dependent filter resyncs");
+
+    controller.syncLayers([clustered({ filterExpression: ["==", ["get", "keep"], true] })]);
+    const settled = fake.calls.length;
+    fake.emit("zoomend");
+    assert.equal(fake.calls.length, settled, "listener detached with the filter");
+  });
+
+  it("applies a restored layer filter once the vector control creates its layers", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const filterExpression = ["==", ["get", "CONTINENT"], "Europe"];
+    const layer = controlVectorLayer("countries", { filterExpression });
+    const fillId = "countries-fill";
+
+    // Reopening a project: the store carries the saved layer, but the control
+    // has not replayed the file yet, so its native layers are not on the map.
+    controller.syncLayers([layer]);
+    assert.equal(fake.layers.has(fillId), false, "control has not added its layers yet");
+    assert.equal(
+      fake.calls.some((call) => call.method === "setFilter"),
+      false,
+      "nothing to filter yet",
+    );
+
+    // The control finishes loading and adds them. It reproduces the saved store
+    // layer exactly, so no store change follows to trigger another sync.
+    fake.layers.set(fillId, { id: fillId, type: "fill", paint: {} });
+    fake.layers.set("countries-outline", { id: "countries-outline", type: "line", paint: {} });
+    fake.emit("styledata");
+
+    const filterCalls = fake.calls.filter((call) => call.method === "setFilter");
+    assert.deepEqual(
+      filterCalls.map((call) => call.args),
+      [
+        [fillId, filterExpression],
+        ["countries-outline", filterExpression],
+      ],
+      "the persisted filter reaches every layer the control created",
+    );
+  });
+
+  it("waits for every native layer before resyncing pending filters", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const layer = controlVectorLayer("countries", {
+      filterExpression: ["==", ["get", "CONTINENT"], "Europe"],
+    });
+
+    controller.syncLayers([layer]);
+    // Only half the control's layers have arrived: a sync now would filter one
+    // and leave the other unfiltered, so it must hold.
+    fake.layers.set("countries-fill", { id: "countries-fill", type: "fill", paint: {} });
+    fake.emit("styledata");
+    assert.equal(
+      fake.calls.some((call) => call.method === "setFilter"),
+      false,
+      "held until the layer set is complete",
+    );
+
+    fake.layers.set("countries-outline", { id: "countries-outline", type: "line", paint: {} });
+    fake.emit("styledata");
+    assert.equal(
+      fake.calls.filter((call) => call.method === "setFilter").length,
+      2,
+      "both native layers filtered",
+    );
+  });
+
+  it("attaches no pending-filter listener for an unfiltered control layer", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+
+    controller.syncLayers([controlVectorLayer("countries")]);
+    const before = fake.calls.length;
+    fake.layers.set("countries-fill", { id: "countries-fill", type: "fill", paint: {} });
+    fake.emit("styledata");
+
+    assert.equal(fake.calls.length, before, "no resync without a filter to apply");
+  });
+
   it("applies a visibility toggle as a layout property", () => {
     const { map, fake } = makeFakeMap();
     const controller = controllerWith(map);
@@ -744,6 +1017,21 @@ describe("MapController.syncLayers vector-tile time filtering", () => {
     ]);
   });
 
+  it("combines a persistent expression filter with transient filters", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const filterExpression = ["==", ["get", "status"], "open"];
+
+    controller.syncLayers([vectorTileLayer("vt", { timeFilter, filterExpression })]);
+
+    assert.deepEqual(fake.layers.get("layer-vt-vector")?.filter, [
+      "all",
+      POLYGON_GEOMETRY_FILTER,
+      timeFilter,
+      filterExpression,
+    ]);
+  });
+
   it("applies the window to an extruded tile layer", () => {
     const { map, fake } = makeFakeMap();
     const controller = controllerWith(map);
@@ -932,6 +1220,20 @@ describe("MapController camera and query helpers", () => {
   // rather than inline: an inline reset after an assertion never runs when that
   // assertion fails, silently leaving a non-Earth body active for later tests.
   afterEach(() => setActiveEllipsoidId("earth"));
+
+  it("publishes geographic map clicks and removes the listener on cleanup", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    const clicks: [number, number][] = [];
+    const unsubscribe = controller.onMapClick((lngLat) => clicks.push(lngLat));
+
+    fake.emit("click", { lngLat: { lng: -76.5, lat: 39.25 } });
+    assert.deepEqual(clicks, [[-76.5, 39.25]]);
+
+    unsubscribe();
+    fake.emit("click", { lngLat: { lng: 10, lat: 20 } });
+    assert.deepEqual(clicks, [[-76.5, 39.25]]);
+  });
 
   // The defensive probe in readCameraAltitude exists precisely because a
   // MapLibre bump could drop or rename transform.getCameraAltitude; without
@@ -1286,6 +1588,70 @@ describe("MapController camera and query helpers", () => {
     );
     assert.ok(transition, "transition property set");
     assert.deepEqual(transition.args[2], { duration: 500 });
+  });
+});
+
+describe("MapController map preference camera clamp", () => {
+  // applyMapPreferences re-applies the current camera so the new constraints
+  // clamp it. That jump used to cancel whatever camera animation was running:
+  // loading a LiDAR point cloud flips the projection preference (the deck.gl
+  // mercator lock) from the `load` event fired right after the plugin starts
+  // its own fitBounds, so the fly-to-the-data died where it started.
+  const preferences = DEFAULT_PROJECT_PREFERENCES.map;
+
+  it("clamps the camera immediately when nothing is animating", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+
+    controller.applyMapPreferences(preferences);
+
+    assert.equal(fake.calls.filter((call) => call.method === "jumpTo").length, 1);
+  });
+
+  it("defers the clamp to moveend while the camera is animating", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    fake.setMoving(true);
+
+    controller.applyMapPreferences(preferences);
+    assert.deepEqual(
+      fake.calls.filter((call) => call.method === "jumpTo"),
+      [],
+      "a jump mid-animation would stop the animation",
+    );
+
+    // The constraints themselves still went in, so the animation's own target
+    // cannot escape them while the clamp waits.
+    for (const method of ["setMinZoom", "setMaxZoom", "setMaxPitch", "setMaxBounds"])
+      assert.ok(
+        fake.calls.some((call) => call.method === method),
+        `expected ${method} to be applied`,
+      );
+
+    fake.setMoving(false);
+    fake.emit("moveend");
+    assert.equal(fake.calls.filter((call) => call.method === "jumpTo").length, 1);
+  });
+
+  it("queues one clamp however many preference changes land mid-animation", () => {
+    const { map, fake } = makeFakeMap();
+    const controller = controllerWith(map);
+    fake.setMoving(true);
+
+    controller.applyMapPreferences(preferences);
+    controller.applyMapPreferences({ ...preferences, maxPitch: 60 });
+    controller.applyMapPreferences({ ...preferences, maxPitch: 45 });
+
+    fake.setMoving(false);
+    fake.emit("moveend");
+    assert.equal(fake.calls.filter((call) => call.method === "jumpTo").length, 1);
+
+    // And the next movement re-arms, rather than the flag latching on.
+    fake.setMoving(true);
+    controller.applyMapPreferences(preferences);
+    fake.setMoving(false);
+    fake.emit("moveend");
+    assert.equal(fake.calls.filter((call) => call.method === "jumpTo").length, 2);
   });
 });
 
@@ -2261,5 +2627,70 @@ describe("COG DEM terrain source", () => {
     );
     assert.equal(first.disposed, true);
     controller.destroy();
+  });
+});
+
+describe("MapController search result lifecycle", () => {
+  it("isolates cell overlays and clears them before map teardown, including after a style reload", () => {
+    const { map, fake } = makeFakeMap();
+    Object.assign(map as object, {
+      isStyleLoaded: () => true,
+      getTerrain: () => null,
+      remove: () => {
+        assert.equal(fake.sources.size, 0, "search sources must be removed before map teardown");
+      },
+    });
+    const controller = controllerWith(map);
+    const cell: import("geojson").Polygon = {
+      type: "Polygon",
+      coordinates: [
+        [
+          [179, 0],
+          [181, 0],
+          [181, 1],
+          [179, 0],
+        ],
+      ],
+    };
+    const clearFirst = controller.showSearchResult(cell);
+    const clearSecond = controller.showSearchResult(cell);
+    assert.equal(fake.sources.size, 2);
+    assert.equal(fake.layers.size, 5);
+    clearFirst();
+    clearFirst();
+    assert.equal(fake.sources.size, 1);
+    assert.equal(fake.layers.size, 3);
+    assert.ok(fake.layers.has("basemap-bg"));
+    // A basemap style reload can discard an overlay before the panel clears it.
+    fake.sources.clear();
+    fake.layers.clear();
+    assert.doesNotThrow(clearSecond);
+    const clearLast = controller.showSearchResult(cell);
+    assert.equal(fake.sources.size, 1);
+    controller.destroy();
+    assert.equal(fake.sources.size, 0);
+    assert.equal(fake.layers.size, 0);
+    assert.doesNotThrow(clearLast);
+    controller.showSearchResult(cell)();
+    assert.equal(fake.sources.size, 0);
+  });
+
+  it("does not add a cell to a style that is still loading", () => {
+    const { map, fake } = makeFakeMap();
+    Object.assign(map as object, { isStyleLoaded: () => false });
+    const controller = controllerWith(map);
+    controller.showSearchResult({
+      type: "Polygon",
+      coordinates: [
+        [
+          [0, 0],
+          [1, 0],
+          [1, 1],
+          [0, 0],
+        ],
+      ],
+    })();
+    assert.equal(fake.sources.size, 0);
+    assert.equal(fake.layers.size, 1);
   });
 });

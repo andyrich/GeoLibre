@@ -1,7 +1,14 @@
 import { DEFAULT_LAYER_STYLE, useAppStore } from "@geolibre/core";
-import { fillLayerId, lineLayerId } from "@geolibre/map/style-layer-ids";
+import {
+  fillLayerId,
+  lineLayerId,
+  mapboxFillLayerId,
+  mapboxLineLayerId,
+} from "@geolibre/map/style-layer-ids";
 import type { FeatureCollection, Geometry } from "geojson";
-import type { GeoJSONSource, MapMouseEvent, Map as MapLibreMap } from "maplibre-gl";
+import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
+import type { Map as MapboxMap } from "mapbox-gl";
+
 import type {
   GeoLibreAppAPI,
   GeoLibreCogLayerOptions,
@@ -22,6 +29,9 @@ import {
   requiresTarget,
   itemBbox,
   loadStacIndex,
+  loadPortolanIndex,
+  portolanIndexFromDocument,
+  PORTOLAN_REGISTRY_URL,
   openCatalogNode,
   searchStacApi,
   searchStaticStac,
@@ -61,12 +71,25 @@ import {
 
 export const STAC_PLUGIN_ID = "geolibre-stac-catalogs";
 export const PLANET_OPEN_DATA_PLUGIN_ID = "geolibre-planet-open-data";
+export const PORTOLAN_PLUGIN_ID = "geolibre-portolan";
 export const PLANET_DISASTER_DATA_CATALOG_URL =
   "https://data.source.coop/planet/disasterdata/catalog.json";
 // The footprints layer is a normal store layer, so it is saved into the project
 // while `footprintLayerId` only lives for the session. This marker is how a
 // later search — or a reopened project — recognizes the layer as ours instead
 // of adding a second copy.
+type StacPointerEvent = { point: { x: number; y: number } };
+type StacMap = Omit<MapLibreMap | MapboxMap, "getSource" | "on" | "off"> & {
+  getSource(id: string): unknown;
+  on(type: "click" | "mousemove", listener: (event: StacPointerEvent) => void): unknown;
+  off(type: "click" | "mousemove", listener: (event: StacPointerEvent) => void): unknown;
+};
+
+/** STAC uses the native GeoJSON, picking and pointer APIs shared by both engines. */
+function getStacMap(app: GeoLibreAppAPI | null): StacMap | null {
+  return app?.getMap?.() ?? app?.getMapboxMap?.() ?? null;
+}
+
 const FOOTPRINT_SOURCE_KIND = "stac-footprints";
 const DRAW_SOURCE = "geolibre-stac-draw-bbox";
 const DRAW_FILL = "geolibre-stac-draw-bbox-fill";
@@ -360,6 +383,15 @@ let unregisterPanel: (() => void) | null = null;
 let disposePanel: (() => void) | null = null;
 let panelContainer: HTMLElement | null = null;
 let initialCatalogUrl = "";
+interface CatalogBrowserOptions {
+  loadIndex?: typeof loadStacIndex;
+  indexFromConnection?: (connection: StacConnection) => StacIndexCatalog[];
+  catalogSearchLabel?: (app: GeoLibreAppAPI) => string;
+  indexLabels?: (
+    app: GeoLibreAppAPI,
+  ) => Pick<StacLabels, "indexLoading" | "indexUnavailable" | "indexLoadFailed">;
+}
+let browserOptions: CatalogBrowserOptions = {};
 
 // The results pane and the controls above it each keep a floor so neither can
 // be dragged away entirely. splitterBounds() reserves the controls floor and
@@ -413,7 +445,7 @@ function field(label: string, type = "text"): { wrap: HTMLElement; input: HTMLIn
 }
 
 function currentExtent(): [number, number, number, number] | undefined {
-  const bounds = appRef?.getMap?.()?.getBounds();
+  const bounds = getStacMap(appRef)?.getBounds();
   if (!bounds) return undefined;
   const west = Math.max(-180, bounds.getWest());
   const east = Math.min(180, bounds.getEast());
@@ -439,13 +471,13 @@ function removeFootprints(): void {
   footprintLayerId = null;
 }
 
-function removeDrawBox(map: MapLibreMap): void {
+function removeDrawBox(map: StacMap): void {
   if (map.getLayer(DRAW_LINE)) map.removeLayer(DRAW_LINE);
   if (map.getLayer(DRAW_FILL)) map.removeLayer(DRAW_FILL);
   if (map.getSource(DRAW_SOURCE)) map.removeSource(DRAW_SOURCE);
 }
 
-function showDrawBox(map: MapLibreMap, bbox: [number, number, number, number]): void {
+function showDrawBox(map: StacMap, bbox: [number, number, number, number]): void {
   const [west, south, east, north] = bbox;
   const data: FeatureCollection = {
     type: "FeatureCollection",
@@ -495,7 +527,7 @@ function showDrawBox(map: MapLibreMap, bbox: [number, number, number, number]): 
 function beginBboxDraw(
   onComplete: (bbox: [number, number, number, number]) => void,
 ): (() => void) | null {
-  const map = appRef?.getMap?.();
+  const map = getStacMap(appRef);
   if (!map) return null;
   const canvas = map.getCanvas();
   let start: { lng: number; lat: number } | null = null;
@@ -588,14 +620,14 @@ function showFootprints(items: StacItem[]): void {
   });
 }
 
-function removeSelectionHighlight(map: MapLibreMap): void {
+function removeSelectionHighlight(map: StacMap): void {
   if (map.getLayer(SELECT_LINE)) map.removeLayer(SELECT_LINE);
   if (map.getLayer(SELECT_FILL)) map.removeLayer(SELECT_FILL);
   if (map.getSource(SELECT_SOURCE)) map.removeSource(SELECT_SOURCE);
 }
 
 function showSelectionHighlight(geometry: Geometry | null): void {
-  const map = appRef?.getMap?.();
+  const map = getStacMap(appRef);
   if (!map) return;
   if (!geometry) {
     removeSelectionHighlight(map);
@@ -626,11 +658,14 @@ function showSelectionHighlight(geometry: Geometry | null): void {
 }
 
 /** Native style layers backing the footprint store layer, if it is on the map. */
-function footprintStyleLayers(map: MapLibreMap): string[] {
+function footprintStyleLayers(map: StacMap): string[] {
   if (!footprintLayerId) return [];
-  return [fillLayerId(footprintLayerId), lineLayerId(footprintLayerId)].filter((id) =>
-    map.getLayer(id),
-  );
+  return [
+    fillLayerId(footprintLayerId),
+    lineLayerId(footprintLayerId),
+    mapboxFillLayerId(footprintLayerId),
+    mapboxLineLayerId(footprintLayerId),
+  ].filter((id) => map.getLayer(id));
 }
 
 function assetLabel(key: string, asset: StacAsset): string {
@@ -867,11 +902,14 @@ function buildPanel(container: HTMLElement): () => void {
 
   const catalogSection = el("div");
   catalogSection.style.cssText = style.section;
-  const catalogSearch = field(labels.catalogSearch);
+  const catalogSearch = field(
+    (appRef && browserOptions.catalogSearchLabel?.(appRef)) || labels.catalogSearch,
+  );
   catalogSearch.input.placeholder = labels.catalogSearchPlaceholder;
   const catalogSelect = el("select");
   catalogSelect.style.cssText = style.input;
-  const firstOption = el("option", labels.indexLoading);
+  const indexLabels = (appRef && browserOptions.indexLabels?.(appRef)) || labels;
+  const firstOption = el("option", indexLabels.indexLoading);
   firstOption.value = "";
   catalogSelect.append(firstOption);
   const urlField = field(labels.urlLabel, "url");
@@ -1480,7 +1518,7 @@ function buildPanel(container: HTMLElement): () => void {
   urlField.input.addEventListener("input", () => {
     if (urlField.input.value !== initialCatalogUrl) presetSelectionPending = false;
   });
-  const connectCatalog = async (): Promise<void> => {
+  const connectCatalog = async (): Promise<StacConnection | undefined> => {
     const url = urlField.input.value.trim();
     setDisabled(connectButton, true);
     setStatus(labels.connecting);
@@ -1508,6 +1546,7 @@ function buildPanel(container: HTMLElement): () => void {
       renderSection.hidden = false;
       clearSearchResults(false);
       setStatus(connection.description || labels.connected);
+      return connection;
     } catch (error) {
       connection = null;
       searchSection.hidden = true;
@@ -1518,7 +1557,7 @@ function buildPanel(container: HTMLElement): () => void {
     }
   };
   connectButton.addEventListener("click", () => void connectCatalog());
-  if (initialCatalogUrl) void connectCatalog();
+  const presetConnection = initialCatalogUrl ? connectCatalog() : undefined;
   searchButton.addEventListener("click", () => void runSearch(false));
   clearResultsButton.addEventListener("click", () => clearSearchResults());
   loadMore.addEventListener("click", () => void runSearch(true));
@@ -1547,48 +1586,58 @@ function buildPanel(container: HTMLElement): () => void {
   clearDrawButton.addEventListener("click", () => {
     bboxField.input.value = "";
     clearDrawButton.hidden = true;
-    const map = appRef?.getMap?.();
+    const map = getStacMap(appRef);
     if (map) removeDrawBox(map);
     setStatus(labels.drawnBboxCleared);
   });
 
   // Clicking a footprint selects the matching result card. The bbox-draw mode
   // owns the pointer while it is active, so both handlers stand down for it.
-  const footprintIdAt = (event: MapMouseEvent): string | null => {
-    const map = appRef?.getMap?.();
+  const footprintIdAt = (event: StacPointerEvent): string | null => {
+    const map = getStacMap(appRef);
     if (!map || cancelDraw) return null;
     const layers = footprintStyleLayers(map);
     if (!layers.length) return null;
-    const feature = map.queryRenderedFeatures(event.point, { layers })[0];
+    const feature = map.queryRenderedFeatures([event.point.x, event.point.y], { layers })[0];
     const id = feature?.properties?.id;
     return typeof id === "string" ? id : null;
   };
-  const onMapClick = (event: MapMouseEvent): void => {
+  const onMapClick = (event: StacPointerEvent): void => {
     const id = footprintIdAt(event);
     if (id) selectItem(id, true);
   };
-  const onMapMove = (event: MapMouseEvent): void => {
-    const map = appRef?.getMap?.();
+  const onMapMove = (event: StacPointerEvent): void => {
+    const map = getStacMap(appRef);
     if (!map || cancelDraw) return;
     map.getCanvas().style.cursor = footprintIdAt(event) ? "pointer" : "";
   };
-  const map = appRef?.getMap?.();
+  const map = getStacMap(appRef);
   map?.on("click", onMapClick);
   map?.on("mousemove", onMapMove);
 
-  void loadStacIndex(fetch, controller.signal).then(
+  const loadIndex = browserOptions.loadIndex ?? loadStacIndex;
+  const indexFromConnection = browserOptions.indexFromConnection;
+  // Portolan's preset and discovery list are the same document. Reuse the initial
+  // connection, retaining URL entry and a separate retry if that connection failed.
+  const indexRequest =
+    presetConnection && indexFromConnection
+      ? presetConnection.then((opened) =>
+          opened ? indexFromConnection(opened) : loadIndex(fetch, controller.signal),
+        )
+      : loadIndex(fetch, controller.signal);
+  void indexRequest.then(
     (catalogs) => {
       index = catalogs;
       renderCatalogs();
     },
     (error) => {
       catalogSelect.innerHTML = "";
-      catalogSelect.append(el("option", labels.indexUnavailable));
+      catalogSelect.append(el("option", indexLabels.indexUnavailable));
       // A preset catalog connects in parallel with this index fetch, so a late
       // index failure must not overwrite a connection that already succeeded —
       // the catalog is usable, only the browse-by-name dropdown is not.
       if (!connection) {
-        setStatus(error instanceof Error ? error.message : labels.indexLoadFailed, true);
+        setStatus(error instanceof Error ? error.message : indexLabels.indexLoadFailed, true);
       }
     },
   );
@@ -1599,7 +1648,7 @@ function buildPanel(container: HTMLElement): () => void {
     searchGeneration += 1;
     // The footprints are the user's layer now, so closing the panel leaves them
     // on the map; only deactivating the plugin tears them down.
-    const activeMap = appRef?.getMap?.();
+    const activeMap = getStacMap(appRef);
     if (activeMap) {
       activeMap.off("click", onMapClick);
       activeMap.off("mousemove", onMapMove);
@@ -1624,26 +1673,32 @@ function mountPanel(container: HTMLElement): void {
  * @param presetCatalogUrl - Optional default catalog URL to connect to on load.
  * @returns A {@link GeoLibrePlugin} instance for browsing STAC catalogs.
  */
-function createStacPlugin(id: string, name: string, presetCatalogUrl = ""): GeoLibrePlugin {
+function createStacPlugin(
+  id: string,
+  name: string,
+  presetCatalogUrl = "",
+  options: CatalogBrowserOptions = {},
+): GeoLibrePlugin {
   return {
     id,
     name,
     version: "0.1.0",
-    // MapLibre only: the panel is engine-neutral, but item footprints, the
-    // "current view" search bbox, the draw-bbox tool, and footprint
-    // click/hover all go through `app.getMap()`, which is null off MapLibre.
-    engines: ["maplibre"],
+    // Footprints and interaction use the shared native GeoJSON APIs.
+    engines: ["maplibre", "mapbox"],
     exclusiveGroup: "stac-catalog-browser",
     activate(app) {
       initialCatalogUrl = presetCatalogUrl;
+      browserOptions = options;
       appRef = app;
       unregisterPanel =
         app.registerRightPanel?.({
           id,
           title: () =>
-            presetCatalogUrl
+            id === PLANET_OPEN_DATA_PLUGIN_ID
               ? (labels.getPlanetTitle?.() ?? labels.planetTitle)
-              : (labels.getTitle?.() ?? labels.title),
+              : id === STAC_PLUGIN_ID
+                ? (labels.getTitle?.() ?? labels.title)
+                : name,
           dock: "replace-style",
           defaultWidth: 380,
           render(container) {
@@ -1662,13 +1717,14 @@ function createStacPlugin(id: string, name: string, presetCatalogUrl = ""): GeoL
       unregisterPanel?.();
       unregisterPanel = null;
       removeFootprints();
-      const map = app.getMap?.();
+      const map = getStacMap(app);
       if (map) {
         removeDrawBox(map);
         removeSelectionHighlight(map);
       }
       appRef = null;
       initialCatalogUrl = "";
+      browserOptions = {};
     },
   };
 }
@@ -1680,6 +1736,35 @@ export const maplibrePlanetOpenDataPlugin = createStacPlugin(
   PLANET_OPEN_DATA_PLUGIN_ID,
   "Planet Open Data",
   PLANET_DISASTER_DATA_CATALOG_URL,
+);
+
+/** Browse registered Portolan catalogs or connect directly to a publisher's URL. */
+export const maplibrePortolanPlugin = createStacPlugin(
+  PORTOLAN_PLUGIN_ID,
+  "Portolan",
+  PORTOLAN_REGISTRY_URL,
+  {
+    loadIndex: loadPortolanIndex,
+    indexFromConnection: (connection) => portolanIndexFromDocument(connection.root),
+    indexLabels: (app) => ({
+      indexLoading:
+        app.translate?.("stacPlugin.portolanIndexLoading", "Loading Portolan Registry…") ??
+        "Loading Portolan Registry…",
+      indexUnavailable:
+        app.translate?.(
+          "stacPlugin.portolanIndexUnavailable",
+          "Portolan Registry unavailable: enter a URL",
+        ) ?? "Portolan Registry unavailable: enter a URL",
+      indexLoadFailed:
+        app.translate?.("stacPlugin.portolanIndexLoadFailed", "Could not load Portolan Registry") ??
+        "Could not load Portolan Registry",
+    }),
+    catalogSearchLabel: (app) =>
+      app.translate?.(
+        "stacPlugin.portolanCatalogSearch",
+        "Find a public catalog from Portolan Registry",
+      ) ?? "Find a public catalog from Portolan Registry",
+  },
 );
 
 export default maplibreStacCatalogsPlugin;

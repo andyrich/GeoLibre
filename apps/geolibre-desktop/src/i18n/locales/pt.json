@@ -22,6 +22,7 @@
     "noMatches": "Nenhum resultado.",
     "addFailed": "Não foi possível adicionar esta fonte de dados.",
     "builtinBadge": "integrado",
+    "configBadge": "config",
     "newConnection": "Nova conexão {{kind}}",
     "loadingTables": "Carregando tabelas…",
     "files": "Arquivos",
@@ -347,6 +348,22 @@
       "polyline": {
         "label": "Adicionar camada de polilinha codificada",
         "description": "Importar strings de polilinha codificada (Google, OSRM, Valhalla) de texto ou arquivos como linhas vetoriais."
+      },
+      "cesiumIon": {
+        "label": "Adicionar recurso do Cesium Ion",
+        "description": "Adicione um tileset 3D Tiles ou imagens do Cesium Ion pelo id do recurso. Renderizado no globo 3D com o seu token do Cesium Ion."
+      },
+      "czml": {
+        "label": "Adicionar camada 3D dinâmica CZML",
+        "description": "Carregue um documento dinâmico Cesium Language (CZML) que descreve órbitas, trajetórias, caminhos de veículos e cenas 3D variáveis no tempo sobre o globo."
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "Carregue KML ou KMZ com estilos nativos, sobreposições e links de rede no globo."
+      },
+      "wcs": {
+        "description": "Carregar um subconjunto GeoTIFF numérico de um serviço WCS 1.0.0.",
+        "label": "Camada WCS"
       }
     },
     "shared": {
@@ -386,6 +403,7 @@
       "loadAria": "Carregar um serviço salvo",
       "loadPlaceholder": "Carregar um serviço salvo…",
       "builtin": "{{name}} (integrado)",
+      "config": "{{name}} (config)",
       "deleteAria": "Excluir serviço salvo",
       "empty": "Nenhum serviço salvo ainda — preencha o formulário e escolha “Salvar atual”.",
       "name": "Nome",
@@ -403,6 +421,41 @@
       "imported_other": "{{count}} serviços importados.",
       "importedWithDropped_one": "{{count}} serviço importado ({{dropped}} ignorado — biblioteca cheia).",
       "importedWithDropped_other": "{{count}} serviços importados ({{dropped}} ignorados — biblioteca cheia)."
+    },
+    "cesiumIon": {
+      "defaultName": "Recurso do Cesium Ion",
+      "assetId": "ID do recurso",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "Imagens",
+      "altitudeOffset": "Deslocamento de altitude (m)",
+      "quickPicks": "Seleção rápida",
+      "quickPicksPlaceholder": "Escolha um recurso…",
+      "quickPicksGlobal": "Incluídos em qualquer conta ion",
+      "quickPicksDepot": "Amostras do Asset Depot",
+      "hint": "Encontre os ids de recurso em “My Assets” em ion.cesium.com. O recurso deve estar compartilhado com o token configurado em Configurações.",
+      "depotHint": "As amostras do Asset Depot só são transmitidas depois de adicioná-las à sua conta em ion.cesium.com → Asset Depot.",
+      "errorAssetId": "Digite um id de recurso do Cesium Ion (um número inteiro positivo).",
+      "errorAltitude": "Digite o deslocamento de altitude como um número de metros.",
+      "tokenMissing": "Nenhum token do Cesium Ion está configurado. Adicione um em Configurações → Variáveis de ambiente (VITE_CESIUM_TOKEN), ou o recurso não será carregado."
+    },
+    "czml": {
+      "defaultName": "Cena dinâmica CZML",
+      "url": "URL do CZML",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "Arquivo local",
+      "file": "Arquivo",
+      "quickPicks": "Cenas dinâmicas de exemplo",
+      "hint": "Fluxos ou arquivos CZML definem posições 3D dinâmicas, animações e órbitas sincronizadas com o relógio do globo.",
+      "errorUrl": "Digite uma URL válida de endpoint CZML.",
+      "errorChooseFile": "Selecione um arquivo CZML (.czml ou .json) para carregar.",
+      "errorFileMissing": "Não foi possível ler o arquivo selecionado.",
+      "errorInvalidCzml": "O arquivo não contém um documento CZML válido (esperava-se um array JSON ou um objeto de pacote).",
+      "readError": "Falha ao ler os dados CZML."
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "URL KML / KMZ",
+      "errorSource": "Insira uma URL KML/KMZ ou escolha um arquivo."
     },
     "xyz": {
       "defaultName": "Camada XYZ",
@@ -465,6 +518,7 @@
       "selectType_one": "Selecionar entre {{count}} tipo de feição",
       "selectType_other": "Selecionar entre {{count}} tipos de feição",
       "noTypesFound": "Nenhum tipo de feição foi encontrado para este serviço.",
+      "errorNoFeatures": "Este tipo de feição não retornou nenhuma feição.",
       "retrieveError": "Não foi possível recuperar os tipos de feição deste serviço."
     },
     "wmts": {
@@ -912,9 +966,53 @@
       "cellSize": "Tamanho da célula",
       "lineWidth": "Espessura da linha",
       "extrusion": "Extrusão 3D",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "Escolher modelo local",
+      "sampleDataset": "Conjunto de dados de exemplo",
+      "sampleCustom": "Modelo personalizado",
+      "sampleAirplane": "Avião — San Francisco",
+      "sampleShanghai": "Xangai — centro da cidade",
+      "modelFileHint": "Escolha um arquivo GLB ou um glTF autocontido. Modelos locais são incorporados aos projetos salvos, aumentando o tamanho do projeto.",
+      "modelExternalResources": "Este modelo faz referência a arquivos separados. Exporte-o como GLB com texturas e buffers incorporados e tente novamente.",
+      "modelTooLarge": "Este modelo excede o limite de {{limit}} MB para incorporação em um projeto. Hospede-o e adicione-o por URL.",
+      "modelFileError": "Não foi possível ler este modelo. Escolha um arquivo glTF 2.0 ou GLB válido."
     },
-    "nonGeographicCoordinates": "As coordenadas em {{names}} não são de longitude/latitude, portanto nada será desenhado no mapa. O CRS está incorreto — reprojete os dados (ou corrija o .prj) e carregue novamente."
+    "nonGeographicCoordinates": "As coordenadas em {{names}} não são de longitude/latitude, portanto nada será desenhado no mapa. O CRS está incorreto — reprojete os dados (ou corrija o .prj) e carregue novamente.",
+    "pmtiles": {
+      "errorUrl": "Digite uma URL HTTP ou HTTPS válida de PMTiles.",
+      "errorMlt": "O ArcGIS requer blocos vetoriais MVT, não MLT."
+    },
+    "lidar": {
+      "errorUrl": "Digite uma URL HTTP ou HTTPS válida de LiDAR."
+    },
+    "zarr": {
+      "errorUrl": "Digite uma URL HTTP ou HTTPS válida de Zarr.",
+      "errorColorLimits": "O limite máximo de cor deve ser maior que o mínimo."
+    },
+    "raster": {
+      "errorSource": "Insira uma URL GeoTIFF ou escolha um arquivo."
+    },
+    "wcs": {
+      "coverage": "Cobertura",
+      "retrieve": "Obter coberturas",
+      "select": "Selecionar uma cobertura",
+      "extent": "Usar extensão da cobertura",
+      "width": "Largura (pixels)",
+      "height": "Altura (pixels)",
+      "hint": "Baixa um GeoTIFF em EPSG:4326 nas dimensões selecionadas. Os valores podem ser reamostrados. Salve o raster para manter os dados baixados.",
+      "errors": {
+        "xml": "O serviço retornou XML inválido.",
+        "version": "Esta fonte requer WCS 1.0.0. O serviço retornou uma resposta não suportada.",
+        "empty": "Nenhuma cobertura correspondente disponível.",
+        "format": "A cobertura não anuncia saída GeoTIFF.",
+        "crs": "A cobertura deve suportar EPSG:4326 para solicitações e saída.",
+        "size": "Escolha dimensões de 1 a 4096 pixels. Os downloads são limitados a 128 MB.",
+        "metadata": "O serviço retornou mais metadados do que o GeoLibre pode carregar. As respostas de metadados são limitadas a 32 MB.",
+        "response": "O serviço não retornou um GeoTIFF válido.",
+        "bounds": "Digite uma caixa válida: oeste/leste entre -180 e 180, sul/norte entre -90 e 90, com oeste < leste e sul < norte.",
+        "url": "Digite uma URL de serviço WCS."
+      }
+    }
   },
   "offline": {
     "title": "Baixar área offline",
@@ -1354,6 +1452,12 @@
     "errorFallback": "Não foi possível compartilhar o projeto.",
     "usernameRequired": "Defina um nome de usuário na sua conta {{shareHost}} antes de compartilhar. Abra as configurações da sua conta para escolher um e tente novamente.",
     "openAccountSettings": "Abrir configurações da conta",
+    "shareAnyway": "Compartilhar mesmo assim",
+    "localWarningTitle_one": "{{count}} camada ficará faltando no mapa compartilhado",
+    "localWarningTitle_other": "{{count}} camadas ficarão faltando no mapa compartilhado",
+    "localWarningBody": "{{shareHost}} armazena apenas o arquivo do projeto, nunca os arquivos do seu computador. Os destinatários abrem o projeto em um navegador, que não consegue ler o seu disco, então essas camadas ficarão vazias para todos, exceto você.",
+    "localWarningAdvice": "Para incluí-las, converta rasters em Cloud Optimized GeoTIFF e vetores em PMTiles ou GeoParquet, hospede os arquivos em um servidor HTTPS público como GitHub ou Hugging Face, adicione-os ao mapa por URL e compartilhe novamente. Camadas vetoriais locais pequenas são incorporadas ao projeto automaticamente.",
+    "localWarningLearnMore": "Saiba mais",
     "readinessChecking": "Verificando se os destinatários conseguem carregar seus dados…",
     "readinessUnavailable": "Não foi possível executar a verificação das fontes de dados.",
     "readinessAllReachable_one": "{{count}} fonte de dados parece acessível para os destinatários.",
@@ -1434,7 +1538,7 @@
   },
   "printLayout": {
     "title": "Layout de impressão",
-    "description": "Componha um mapa pronto para impressão com título, legenda, barra de escala e seta norte e, em seguida, exporte-o para PNG ou PDF.",
+    "description": "Componha um mapa pronto para impressão com título, legenda, barra de escala e seta norte e, em seguida, exporte-o para PNG, PDF ou SVG.",
     "preview": "Pré-visualização",
     "resizeControls": "Redimensionar painel de controles",
     "resizeDialog": "Redimensionar diálogo",
@@ -1442,6 +1546,7 @@
     "copyToClipboard": "Copiar para a área de transferência",
     "copied": "Copiado",
     "exportPng": "Exportar PNG",
+    "exportSvg": "Exportar SVG",
     "exportPdf": "Exportar PDF",
     "titleLabel": "Título",
     "titlePlaceholder": "Título do mapa",
@@ -1864,24 +1969,35 @@
     "noLayers": "Ainda não há camadas",
     "labelPlaceholder": "Rótulo",
     "labelLabel": "Rótulo do mapa {{number}}",
+    "renderingEngineLabel": "Motor de renderização do mapa {{number}}",
     "removePane": "Remover mapa {{number}}",
     "show3d": "Mostrar mapa {{number}} como um globo 3D",
     "show2d": "Mostrar mapa {{number}} como um mapa 2D",
     "only2d": "Somente 2D",
-    "cesiumTokenHint": "Adicione um token do Cesium Ion em Configurações para terreno e imagens do Ion"
+    "only3d": "Somente 3D",
+    "noMapbox": "Sem Mapbox",
+    "noArcgis": "Sem ArcGIS",
+    "cesiumTokenHint": "Adicione um token do Cesium Ion em <settingsLink>Configurações → Variáveis de ambiente</settingsLink> para terreno e imagens do Ion"
   },
   "renderer": {
     "basemap": "Mapa base",
     "imagery": "Imagens",
     "projectBasemap": "Mapa base do projeto",
     "layerUnsupported": "Não renderizado pelo globo 3D",
+    "layerCesiumOnly": "Renderizado somente pelo globo 3D",
+    "layerMapboxUnsupported": "Não renderizado pelo motor Mapbox",
+    "layerArcgisUnsupported": "Não renderizado pelo motor ArcGIS",
+    "layerArcgisViewUnsupported": "Não renderizado nesta visualização do ArcGIS",
     "resetView": "Redefinir vista",
     "scene3D": "Globo 3D",
     "scene2D": "Mapa 2D",
     "sceneColumbus": "Vista Columbus",
     "fullscreenEnter": "Tela cheia",
     "fullscreenExit": "Sair da tela cheia",
-    "fullscreenUnavailable": "Tela cheia indisponível"
+    "fullscreenUnavailable": "Tela cheia indisponível",
+    "mapboxTokenHint": "Adicione seu token de acesso do Mapbox em <settingsLink>Configurações → Variáveis de ambiente</settingsLink> para usar este renderizador.",
+    "arcgisKeyHint": "Adicione uma chave de API do ArcGIS em <settingsLink>Configurações → Variáveis de ambiente</settingsLink> para usar os estilos de mapa base da Esri.",
+    "pluginUnsupported": "Este plugin não oferece suporte ao mecanismo de renderização selecionado."
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "Copiar coordenadas para a área de transferência",
@@ -2144,6 +2260,14 @@
       "cesiumTokenDescription": "O globo 3D (um painel de visualização dividida) funciona sem token: ele exibe o mapa base do projeto. Um token de acesso adiciona o Cesium World Terrain e as imagens mundiais do Ion. Crie uma conta gratuita em <tokenLink>ion.cesium.com/tokens</tokenLink>, copie seu token de acesso padrão e cole-o abaixo.",
       "cesiumTokenStorageNote": "Armazenado localmente neste dispositivo (não no arquivo do projeto, portanto nunca é compartilhado) e enviado apenas para o Cesium Ion. Na versão web, ele compartilha o mesmo armazenamento do navegador que outros dados do site.",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "Token do Mapbox",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "Para usar o Mapbox, cole abaixo um token de acesso da <tokenLink>sua conta Mapbox</tokenLink>.",
+      "mapboxTokenStorageNote": "Armazenado localmente neste dispositivo (não no arquivo do projeto, portanto nunca é compartilhado) e enviado apenas para o Mapbox. Na versão web, ele compartilha o mesmo armazenamento do navegador que outros dados do site.",
+      "arcgisKeyTitle": "Chave de API do ArcGIS",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "O renderizador ArcGIS funciona sem chave: ele exibe o mapa base do projeto e suas camadas por meio do ArcGIS Maps SDK for JavaScript, carregado da CDN da Esri. Uma chave de API adiciona os estilos de mapa base da Esri (Ruas, Imagens, Topográfico, …). Crie uma em <keyLink>credenciais de desenvolvedor</keyLink> na sua conta do ArcGIS com o privilégio de mapas base e cole-a abaixo.",
+      "arcgisKeyStorageNote": "Armazenada localmente neste dispositivo (não no arquivo do projeto, portanto nunca é compartilhada) e enviada apenas para a Esri. Na versão web, ela compartilha o mesmo armazenamento do navegador que outros dados do site.",
       "variablesTitle": "Variáveis de ambiente",
       "variablesCount_one": "{{count}} variável de execução ativada.",
       "variablesCount_other": "{{count}} variáveis de execução ativadas.",
@@ -2243,6 +2367,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "Eventos terrestres ao vivo e temporais de feeds de dados públicos.",
+      "globeOnly": "Os feeds ao vivo são renderizados no globo Cesium. Mude para o globo 3D para visualizá-los.",
+      "groups": {
+        "movement": "Movimento",
+        "cameras": "Câmeras",
+        "infrastructure": "Infraestrutura",
+        "events": "Eventos",
+        "utilities": "Utilitários"
+      },
+      "earthquakes": "Terremotos",
+      "spaceMissions": "Missões espaciais (30 dias)",
+      "activeFires": "Incêndios ativos (24 h)",
+      "satellites": "Satélites",
+      "flights": "Voos em tempo real",
+      "militaryFlights": "Voos militares",
+      "bikeShare": "Bicicletas compartilhadas",
+      "transit": "Transporte público em tempo real",
+      "streetTraffic": "Tráfego viário simulado",
+      "mappedAlpr": "Câmeras ALPR mapeadas",
+      "cctv": "Câmeras CCTV públicas",
+      "cctvPopup": {
+        "liveSnapshot": "Imagem ao vivo",
+        "provider": "Provedor",
+        "attribution": "Atribuição",
+        "privacy": "Privacidade"
+      },
+      "radio": "Estações de rádio",
+      "datacenters": "Centros de dados",
+      "dams": "Barragens",
+      "cables": "Cabos submarinos",
+      "osmInfrastructure": "Infraestrutura do OSM",
+      "loading": "Atualizando…",
+      "updateFailed": "Falha na atualização",
+      "noneInView": "Nenhuma feição foi encontrada na visualização atual para esta camada.",
+      "never": "Nunca",
+      "lastUpdated": "Última atualização: {{time}}",
+      "speed": "Velocidade",
+      "speedRealTime": "Tempo real (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "Catálogo denso de satélites",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "Não foi possível carregar o catálogo Starlink: {{error}}. Selecione para tentar novamente.",
+      "denseDescription": "Mostre a constelação Starlink completa como pontos leves (sem rótulos ou linhas da tabela)."
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "Projeto",
@@ -2336,6 +2510,7 @@
       "imperial": "Nós / pés",
       "metric": "km/h / metros",
       "bankCamera": "Inclinar o horizonte nas curvas",
+      "bankCameraMapbox": "O Mapbox GL não tem rolagem de câmera, portanto o horizonte permanece nivelado aqui. A aeronave continua inclinando e curvando.",
       "invertPitch": "Inverter o eixo de arfagem",
       "knots": "kt",
       "kph": "km/h",
@@ -2479,9 +2654,12 @@
       "georss": "Camada GeoRSS",
       "video": "Camada de vídeo",
       "deckglViz": "Camada Deck.gl",
+      "cesiumIon": "Recurso do Cesium Ion",
+      "czml": "Cena 3D dinâmica CZML",
       "gltfModel": "Modelo 3D (glTF)",
       "postgres": "Camada PostgreSQL",
-      "iceberg": "Camada Apache Iceberg"
+      "iceberg": "Camada Apache Iceberg",
+      "wcs": "Camada WCS"
     },
     "conversion": {
       "vectorToVector": "Vetor para vetor",
@@ -2736,6 +2914,8 @@
       "splitViewSync": "Sincronizar visualizações",
       "renderingEngine": "Motor de renderização",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Ver no Google Maps",
       "viewInGoogleEarth": "Ver no Google Earth",
@@ -2889,6 +3069,7 @@
       "saveProjectAsTitle": "Salvar projeto como",
       "saveProjectAsDesc": "Digite um nome de arquivo. O projeto será baixado para a pasta de downloads do seu navegador quando você clicar em Salvar.",
       "embedVectorTitle": "Incorporar dados vetoriais locais?",
+      "embedEditedGeometryDesc": "Este projeto contém geometrias editadas. Incorpore os dados vetoriais (cerca de {{size}}) para preservá-las. Sem incorporá-los, as camadas referenciadas serão reabertas com as geometrias originais e os dados locais poderão estar indisponíveis.",
       "embedVectorDesc": "Este projeto tem {{count}} camada(s) vetorial(is) local(is) carregada(s) do seu computador. O navegador não pode relê-las quando o projeto é reaberto, então seus dados precisam ser incorporados no arquivo do projeto para serem restaurados. A incorporação adiciona cerca de {{size}} ao arquivo.",
       "embedVectorDescDesktop": "Este projeto tem {{count}} camada(s) vetorial(is) local(is) carregada(s) do seu computador. Incorpore seus dados para tornar o projeto autocontido (adiciona cerca de {{size}}), ou salve referências de arquivo que recarregam do disco quando o projeto é reaberto. As referências mantêm o arquivo pequeno, mas quebram se um arquivo de origem for movido ou excluído posteriormente.",
       "embedVectorDescMas": "Este projeto tem {{count}} camada(s) vetorial(is) local(is) carregada(s) do seu computador. A sandbox da Mac App Store não consegue manter o acesso a esses arquivos depois que o GeoLibre é fechado, portanto os dados precisam ser incorporados ao arquivo do projeto para serem restaurados. A incorporação adiciona cerca de {{size}} ao arquivo.",
@@ -2946,6 +3127,8 @@
       "maplibre-gl-esri-wayback": "Imagens históricas",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "Baixador de OSM",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "Catálogos STAC",
       "geolibre-planet-open-data": "Dados Abertos Planet",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -2957,6 +3140,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "Mapa base Carto Light",
       "geolibre-flight-simulator": "Simulador de voo",
+      "gods-eye-view": "Visão divina",
       "geolibre-route-animation": "Animação de rota",
       "geolibre-sun": "Simulação solar",
       "maplibre-atmosphere-effects": "Efeitos atmosféricos",
@@ -3132,9 +3316,14 @@
     "openBuilder": "Construtor de expressões...",
     "invalidExpression": "Digite uma expressão booleana válida.",
     "select": "Selecionar feições",
+    "applyLayerFilter": "Filtrar camada",
+    "clearLayerFilter": "Limpar filtro da camada",
+    "layerFilteredHint": "Um filtro persistente está ocultando parte das feições desta camada.",
+    "layerFilteredBothHint": "Um filtro persistente e um filtro rápido estão ocultando parte das feições desta camada.",
     "noLayers": "Adicione uma camada vetorial com feições para fazer uma seleção.",
     "needTwoLayers": "Selecionar por localização requer duas camadas vetoriais com feições.",
     "summary": "{{selected}} de {{total}} feição(ões) selecionada(s) ({{matched}} correspondentes).",
+    "filterSummary": "Filtro da camada aplicado: {{matched}} de {{total}} feição(ões) correspondem.",
     "evaluationErrors": "{{count}} feição(ões) não puderam ser avaliadas e não foram correspondidas.",
     "unevaluableDisjoint": "{{count}} feição(ões) foram excluídas porque sua geometria não pôde ser avaliada.",
     "tooManyPairs": "Esta comparação requer {{pairs}} testes de pares de feições (limite {{limit}}). Em vez disso, use Processamento → GeoLibre → Vetor → Selecionar por localização com o mecanismo Sidecar.",
@@ -3590,10 +3779,14 @@
     "title": "Catálogos STAC",
     "footprintLayerName": "Contornos de busca STAC",
     "catalogSearch": "Encontrar um catálogo público no STAC Index",
+    "portolanCatalogSearch": "Encontrar um catálogo público no Portolan Registry",
     "catalogSearchPlaceholder": "Buscar nomes de catálogos…",
     "indexLoading": "Carregando STAC Index…",
+    "portolanIndexLoading": "Carregando Portolan Registry…",
     "indexUnavailable": "STAC Index indisponível: informe uma URL",
+    "portolanIndexUnavailable": "Portolan Registry indisponível: informe uma URL",
     "indexLoadFailed": "Não foi possível carregar o STAC Index",
+    "portolanIndexLoadFailed": "Não foi possível carregar o Portolan Registry",
     "urlLabel": "URL do catálogo ou da API STAC",
     "connect": "Conectar",
     "connecting": "Conectando ao STAC…",
@@ -4506,6 +4699,10 @@
       "errorStartSidecar": "Não foi possível iniciar o sidecar do GeoLibre.",
       "errorStopSidecar": "Não foi possível parar o sidecar do GeoLibre.",
       "noToolsFound": "Nenhuma ferramenta encontrada.",
+      "searchToolsByMeaning": "Pesquisar ferramentas ou descrever uma tarefa",
+      "searchingByMeaning": "Pesquisando o catálogo por significado",
+      "bestMatches": "Melhores correspondências",
+      "otherMatches": "Outras correspondências",
       "noParameters": "Esta ferramenta não tem parâmetros.",
       "noOutput": "Ainda não há saída.",
       "enabled": "Ativado",
@@ -4580,6 +4777,10 @@
                 "inside": "Dentro (reduzir)",
                 "both": "Ambos os lados"
               }
+            },
+            "dissolve": {
+              "label": "Dissolver o resultado",
+              "description": "Mescla os buffers em uma única feição e dissolve as sobreposições entre eles. A forma resultante não pertence a nenhuma feição de entrada, por isso os atributos são descartados; para dissolver por um atributo, execute a ferramenta Dissolver no resultado."
             }
           }
         },
@@ -6395,6 +6596,7 @@
     "description": "Salve, navegue e aplique estilos, símbolos, predefinições de rótulos e rampas de cores reutilizáveis em camadas e projetos.",
     "searchPlaceholder": "Pesquisar estilos e tags…",
     "presetsSection": "Predefinições integradas",
+    "presetActions": "Ações da predefinição",
     "librarySection": "Minha biblioteca",
     "projectSection": "Este projeto",
     "empty": "Nenhum estilo salvo corresponde. Salve o estilo de uma camada ou importe uma biblioteca para começar.",
@@ -6762,6 +6964,7 @@
     "footerDeck": "As alterações são aplicadas ao vivo ao estilo da camada deck.gl do DuckDB.",
     "footerMaplibre": "As alterações são aplicadas ao vivo às propriedades paint do MapLibre.",
     "pluginPaintedFooter": "Esta camada é desenhada pelo seu plugin, que oferece os próprios controles de estilo.",
+    "serviceStyledFooter": "Esta camada mantém o estilo próprio do seu serviço; opacidade, ordem, intervalo de zoom e filtros continuam valendo.",
     "extrusion": {
       "color": "Cor da extrusão",
       "opacity": "Opacidade da extrusão",
@@ -6957,6 +7160,11 @@
       "invalidExpression": "Expressão inválida",
       "openBuilder": "Abrir o construtor de expressões",
       "showFeatureId": "Mostrar a linha do id da feição",
+      "maxWidth": "Largura do popup (px)",
+      "maxWidthPlaceholder": "Padrão",
+      "imageHeight": "Altura da imagem (px)",
+      "imageHeightPlaceholder": "Padrão",
+      "sizeHint": "Deixe qualquer um em branco para usar o padrão. A imagem mantém a proporção, portanto é alargar o popup que permite a uma foto aproveitar a altura extra.",
       "fields": "Campos",
       "allFields": "Nenhum campo escolhido, então todos os campos visíveis são mostrados, na ordem dos próprios dados.",
       "addField": "Adicionar um campo…",
@@ -7018,6 +7226,7 @@
     "allFieldsUsed": "Todos os campos já têm um filtro",
     "removeAll": "Remover todos",
     "clearAll": "Limpar filtros",
+    "clearAllWithExpression": "Limpar filtros e expressão salva",
     "clearOne": "Limpar este filtro",
     "clearOneNamed": "Limpar o filtro de {{field}}",
     "remove": "Remover filtro",
@@ -7151,6 +7360,9 @@
     "saveEditsSuccess": "{{count}} feição(ões) salva(s) no arquivo de origem.",
     "saveEditsNoFeatures": "Esta camada não tem feições para salvar.",
     "saveEditsError": "Não foi possível salvar as edições no arquivo de origem.",
+    "pendingTableDraftsBlocked": "A tabela de atributos tem edições não salvas que não podem ser aplicadas. Corrija-as ou cancele-as e tente novamente.",
+    "saveEditsToArcgis": "Salvar edições no serviço ArcGIS",
+    "saveEditsArcgisSuccess": "Salvo em ArcGIS: {{inserted}} inserida(s), {{updated}} atualizada(s), {{deleted}} excluída(s).",
     "saveEditsToPostgis": "Salvar edições na tabela PostGIS",
     "saveEditsPostgisSuccess": "Salvo em {{table}}: {{inserted}} inserida(s), {{updated}} atualizada(s), {{deleted}} excluída(s).",
     "saveEditsPostgisSkippedFields": "Os campos sem uma coluna correspondente na tabela não foram salvos: {{fields}}.",
@@ -7193,6 +7405,8 @@
     "renameGroup": "Renomear grupo",
     "moveGroupUp": "Mover grupo para cima",
     "moveGroupDown": "Mover grupo para baixo",
+    "sortGroupAscending": "Ordenar de A a Z",
+    "sortGroupDescending": "Ordenar de Z a A",
     "ungroupKeepLayers": "Desagrupar (manter camadas)",
     "deleteGroupAndLayers": "Excluir grupo e camadas",
     "groupActions": "Ações do grupo",
@@ -7308,7 +7522,20 @@
     "stretchLinear": "Linear",
     "stretchLog": "Logarítmico",
     "stretchSqrt": "Raiz quadrada",
+    "viewportStretch": "Contraste da vista",
+    "viewportMinMax": "Mín. / máx. da vista",
+    "viewportPercentile": "Percentis 5–95 da vista",
+    "viewportStddev": "Média ± 2 desvios padrão da vista",
+    "viewportApply": "Aplicar à vista",
+    "viewportStretching": "Lendo a vista…",
+    "viewportStretchApplied": "Contraste da vista aplicado",
+    "viewportAuto": "Atualizar automaticamente quando o mapa se mover",
+    "viewportStretchNoView": "A vista do mapa não está disponível.",
+    "viewportStretchNoValues": "Nenhum valor raster encontrado na vista.",
+    "viewportStretchNoRange": "Os valores da vista não definem um intervalo.",
+    "viewportStretchMoved": "O mapa se moveu antes de a leitura terminar. Aplique novamente.",
     "index": "Índice",
+    "opacityClasses": "Classes de opacidade",
     "classifyToggle": "Classificar em classes discretas",
     "method": "Método",
     "methodEqualInterval": "Intervalo igual",
@@ -7870,5 +8097,77 @@
     "catalogHuc12pp": "Pontos de escoamento HUC12",
     "catalogNmwdiSt": "Estações hídricas do Novo México",
     "catalogFlowlines": "Linhas de fluxo NHDPlus"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "Use uma URL tileset.json de 3D Tiles nesta visualização do ArcGIS. Os blocos Google Photorealistic e I3S exigem outro renderizador.",
+      "globeGoogleKeyRequired": "Os blocos Google Photorealistic 3D Tiles precisam de uma chave de API do Google Maps nas Configurações para carregar no globo."
+    },
+    "geolibre-osm-downloader": {
+      "title": "OSM Downloader",
+      "hint": "Baixe recursos do OpenStreetMap da área atual do mapa usando a Overpass API pública.",
+      "attribution": "Dados © colaboradores do OpenStreetMap, disponíveis sob a licença ODbL.",
+      "featureType": "Tipo de recurso",
+      "presetBuildings": "Edifícios",
+      "presetRoads": "Estradas",
+      "presetAmenities": "Serviços",
+      "presetWaterways": "Corpos d'água",
+      "presetLanduse": "Uso do solo",
+      "presetCustom": "Tag personalizada",
+      "presetAll": "Todos os recursos com tags",
+      "tagKey": "Chave da tag",
+      "tagValue": "Valor da tag",
+      "tagKeyPlaceholder": "ex.: shop",
+      "tagValuePlaceholder": "opcional, ex.: bakery",
+      "west": "Oeste",
+      "south": "Sul",
+      "east": "Leste",
+      "north": "Norte",
+      "useMapExtent": "Usar extensão do mapa",
+      "download": "Baixar dados OSM",
+      "ready": "Escolha uma área e um tipo de recurso.",
+      "exportGeoJson": "Salvar GeoJSON",
+      "mapUnavailable": "A extensão do mapa ainda não está disponível.",
+      "extentApplied": "Extensão do mapa aplicada.",
+      "downloading": "Baixando do OpenStreetMap…",
+      "noFeatures": "Nenhum recurso correspondente foi encontrado nesta área.",
+      "error": "Não foi possível baixar os dados OSM: {{message}}",
+      "added": "Adicionados {{count}} recursos ao mapa."
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "Pesquise a cobertura de blocos IGN LiDAR HD para a área atual do mapa, adicione blocos ao mapa como nuvens de pontos ou baixe seus arquivos COPC LAZ dos servidores do IGN.",
+      "attribution": "Dados © IGN — LiDAR HD, publicados sob a Licence Ouverte 2.0.",
+      "west": "Oeste",
+      "south": "Sul",
+      "east": "Leste",
+      "north": "Norte",
+      "useMapExtent": "Usar extensão do mapa",
+      "search": "Pesquisar blocos",
+      "addToMap": "Adicionar ao mapa",
+      "download": "Baixar",
+      "ready": "Escolha uma área e pesquise blocos LiDAR HD.",
+      "mapUnavailable": "A extensão do mapa ainda não está disponível.",
+      "extentApplied": "Extensão do mapa aplicada.",
+      "searching": "Pesquisando blocos IGN LiDAR HD…",
+      "noTiles": "Nenhum bloco LiDAR HD foi encontrado nesta área.",
+      "noDownload": "nenhuma nuvem de pontos publicada",
+      "layerName": "Blocos IGN LiDAR HD",
+      "found": "{{count}} bloco(s) encontrado(s).",
+      "foundTruncated": "Mostrando os primeiros {{count}} de {{matched}} blocos. Reduza a área de pesquisa para ver o restante.",
+      "addedToMap": "{{name}} foi adicionado ao mapa.",
+      "alreadyOnMap": "{{name}} já está no mapa.",
+      "unsupportedRenderer": "Nuvens de pontos exigem o renderizador MapLibre ou Mapbox.",
+      "addError": "Não foi possível adicionar {{name}} ao mapa: {{message}}",
+      "error": "Não foi possível pesquisar blocos IGN LiDAR HD: {{message}}",
+      "selectAll": "Selecionar tudo",
+      "selectTile": "Selecionar {{name}}",
+      "addSelectedToMap": "Adicionar selecionados ao mapa",
+      "addSelectedToMapCount": "Adicionar {{count}} selecionados ao mapa",
+      "addingSelected": "Adicionando {{count}} bloco(s) ao mapa…",
+      "addedSelectedCount": "{{count}} bloco(s) adicionado(s) ao mapa.",
+      "alreadyOnMapCountPlural": "{{count}} bloco(s) já estavam no mapa.",
+      "addSelectedFailedCount": "Não foi possível adicionar {{count}} bloco(s)."
+    }
   }
 }

@@ -22,6 +22,7 @@
     "noMatches": "无匹配项。",
     "addFailed": "无法添加此数据源。",
     "builtinBadge": "内置",
+    "configBadge": "配置",
     "newConnection": "新建 {{kind}} 连接",
     "loadingTables": "正在加载表…",
     "files": "文件",
@@ -345,6 +346,22 @@
       "polyline": {
         "label": "添加编码折线图层",
         "description": "将编码折线字符串（Google、OSRM、Valhalla）从文本或文件导入为矢量线。"
+      },
+      "cesiumIon": {
+        "label": "添加 Cesium Ion 资产",
+        "description": "按资产 id 从 Cesium Ion 添加 3D Tiles 瓦片集或影像。使用您的 Cesium Ion 令牌在 3D 地球上渲染。"
+      },
+      "czml": {
+        "label": "添加 CZML 动态 3D 图层",
+        "description": "加载 Cesium Language（CZML）动态文档，在地球上描述轨道、轨迹、车辆路径和随时间变化的 3D 场景。"
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "在地球仪上加载 KML 或 KMZ，保留原生样式、叠加层和网络链接。"
+      },
+      "wcs": {
+        "description": "从 WCS 1.0.0 服务加载数值型 GeoTIFF 子集。",
+        "label": "WCS 图层"
       }
     },
     "shared": {
@@ -384,6 +401,7 @@
       "loadAria": "加载已保存的服务",
       "loadPlaceholder": "加载已保存的服务…",
       "builtin": "{{name}}（内置）",
+      "config": "{{name}}（配置）",
       "deleteAria": "删除已保存的服务",
       "empty": "尚无已保存的服务 — 填写表单并选择“保存当前设置”。",
       "name": "名称",
@@ -399,6 +417,41 @@
       "errorRead": "无法将该文件作为服务库读取。",
       "imported_other": "已导入 {{count}} 个服务。",
       "importedWithDropped_other": "已导入 {{count}} 个服务（{{dropped}} 个因库已满而跳过）。"
+    },
+    "cesiumIon": {
+      "defaultName": "Cesium Ion 资产",
+      "assetId": "资产 ID",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "影像",
+      "altitudeOffset": "高度偏移（米）",
+      "quickPicks": "快速选择",
+      "quickPicksPlaceholder": "选择资产…",
+      "quickPicksGlobal": "所有 ion 账户均可使用",
+      "quickPicksDepot": "Asset Depot 示例",
+      "hint": "可在 ion.cesium.com 的“My Assets”中查找资产 id。该资产必须已与设置中配置的令牌共享。",
+      "depotHint": "Asset Depot 示例需先在 ion.cesium.com → Asset Depot 中添加到你的账户后才能加载。",
+      "errorAssetId": "请输入 Cesium Ion 资产 id（正整数）。",
+      "errorAltitude": "请以米为单位输入高度偏移数值。",
+      "tokenMissing": "尚未配置 Cesium Ion 令牌。请在设置 → 环境变量（VITE_CESIUM_TOKEN）中添加，否则资产将无法加载。"
+    },
+    "czml": {
+      "defaultName": "CZML 动态场景",
+      "url": "CZML URL",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "本地文件",
+      "file": "文件",
+      "quickPicks": "示例动态场景",
+      "hint": "CZML 流或文件定义与地球时钟同步的动态 3D 位置、动画和轨道。",
+      "errorUrl": "请输入有效的 CZML 端点 URL。",
+      "errorChooseFile": "请选择要加载的 CZML（.czml 或 .json）文件。",
+      "errorFileMissing": "无法读取所选文件。",
+      "errorInvalidCzml": "该文件不包含有效的 CZML 文档（应为 JSON 数组或数据包对象）。",
+      "readError": "读取 CZML 数据失败。"
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "KML / KMZ URL",
+      "errorSource": "输入 KML/KMZ URL 或选择文件。"
     },
     "xyz": {
       "defaultName": "XYZ 图层",
@@ -459,6 +512,7 @@
       "retrievedTypes": "已获取要素类型",
       "selectType_other": "从 {{count}} 个要素类型中选择",
       "noTypesFound": "未在该服务中找到任何要素类型。",
+      "errorNoFeatures": "此要素类型未返回任何要素。",
       "retrieveError": "无法从该服务获取要素类型。"
     },
     "wmts": {
@@ -816,7 +870,16 @@
       "cellSize": "单元格大小",
       "lineWidth": "线宽",
       "extrusion": "3D 拉伸",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "选择本地模型",
+      "sampleDataset": "示例数据集",
+      "sampleCustom": "自定义模型",
+      "sampleAirplane": "飞机 — 旧金山",
+      "sampleShanghai": "上海 — 市中心",
+      "modelFileHint": "请选择 GLB 或自包含的 glTF 文件。本地模型会嵌入保存的项目中，从而增大项目体积。",
+      "modelExternalResources": "此模型引用了外部文件。请将其导出为内嵌纹理和缓冲区的 GLB 后重试。",
+      "modelTooLarge": "此模型超过了嵌入项目的 {{limit}} MB 上限。请将其托管到服务器后通过 URL 添加。",
+      "modelFileError": "无法读取此模型。请选择有效的 glTF 2.0 或 GLB 文件。"
     },
     "nonGeographicCoordinates": "{{names}} 中的坐标不是经纬度，因此地图上不会绘制任何内容。坐标参考系标注有误 — 请重新投影数据（或修正 .prj）后再次加载。",
     "iceberg": {
@@ -893,6 +956,41 @@
       "sampleMultiLine": "多线路线批量（3 段）",
       "unitMeters": "{{value}} 米",
       "unitKm": "{{value}} 千米"
+    },
+    "pmtiles": {
+      "errorUrl": "请输入有效的 HTTP 或 HTTPS PMTiles 地址。",
+      "errorMlt": "ArcGIS 需要 MVT 矢量瓦片，不支持 MLT。"
+    },
+    "lidar": {
+      "errorUrl": "请输入有效的 HTTP 或 HTTPS LiDAR 地址。"
+    },
+    "zarr": {
+      "errorUrl": "请输入有效的 HTTP 或 HTTPS Zarr 地址。",
+      "errorColorLimits": "颜色上限必须大于下限。"
+    },
+    "raster": {
+      "errorSource": "输入 GeoTIFF URL 或选择文件。"
+    },
+    "wcs": {
+      "coverage": "覆盖数据",
+      "retrieve": "获取覆盖数据",
+      "select": "选择覆盖数据",
+      "extent": "使用覆盖范围",
+      "width": "宽度（像素）",
+      "height": "高度（像素）",
+      "hint": "按所选像素尺寸下载 EPSG:4326 的 GeoTIFF。数值可能经过重采样。请保存栅格以保留下载的数据。",
+      "errors": {
+        "xml": "服务返回了无效的 XML。",
+        "version": "此数据源需要 WCS 1.0.0。服务返回了不支持的响应。",
+        "empty": "没有可用的匹配覆盖数据。",
+        "format": "覆盖数据未声明支持 GeoTIFF 输出。",
+        "crs": "覆盖数据必须支持使用 EPSG:4326 进行请求和输出。",
+        "size": "请选择 1 到 4096 像素的尺寸。下载大小限制为 128 MB。",
+        "metadata": "服务返回的元数据超出 GeoLibre 可加载的大小。元数据响应限制为 32 MB。",
+        "response": "服务未返回有效的 GeoTIFF。",
+        "bounds": "请输入有效的边界框：东西经度在 -180 到 180 之间，南北纬度在 -90 到 90 之间，且西 < 东、南 < 北。",
+        "url": "请输入 WCS 服务 URL。"
+      }
     }
   },
   "offline": {
@@ -1318,6 +1416,11 @@
     "errorFallback": "无法共享该项目。",
     "usernameRequired": "共享前请在您的 {{shareHost}} 账户上设置用户名。请打开账户设置进行选择，然后重试。",
     "openAccountSettings": "打开账户设置",
+    "shareAnyway": "仍然共享",
+    "localWarningTitle_other": "共享地图中将缺少 {{count}} 个图层",
+    "localWarningBody": "{{shareHost}} 只存储项目文件，不会存储您计算机上的文件。接收者在浏览器中打开项目，而浏览器无法读取您的磁盘，因此除您之外，这些图层对所有人都是空的。",
+    "localWarningAdvice": "若要包含这些图层，请将栅格转换为云优化 GeoTIFF、将矢量转换为 PMTiles 或 GeoParquet，把文件托管到 GitHub 或 Hugging Face 等公开 HTTPS 服务器，通过 URL 添加到地图后再重新共享。较小的本地矢量图层会自动嵌入项目。",
+    "localWarningLearnMore": "了解更多",
     "readinessChecking": "正在检查接收者能否加载您的数据…",
     "readinessUnavailable": "无法运行数据源检查。",
     "readinessAllReachable_other": "全部 {{count}} 个数据源对接收者而言似乎均可访问。",
@@ -1395,7 +1498,7 @@
   },
   "printLayout": {
     "title": "打印布局",
-    "description": "使用标题、图例、比例尺和指北针制作可打印的地图，然后导出为 PNG 或 PDF。",
+    "description": "使用标题、图例、比例尺和指北针制作可打印的地图，然后导出为 PNG、PDF 或 SVG。",
     "preview": "预览",
     "resizeControls": "调整控制面板大小",
     "resizeDialog": "调整对话框大小",
@@ -1403,6 +1506,7 @@
     "copyToClipboard": "复制到剪贴板",
     "copied": "已复制",
     "exportPng": "导出 PNG",
+    "exportSvg": "导出 SVG",
     "exportPdf": "导出 PDF",
     "titleLabel": "标题",
     "titlePlaceholder": "地图标题",
@@ -1819,24 +1923,35 @@
     "noLayers": "尚无图层",
     "labelPlaceholder": "标签",
     "labelLabel": "地图 {{number}} 的标签",
+    "renderingEngineLabel": "地图 {{number}} 的渲染引擎",
     "removePane": "移除地图 {{number}}",
     "show3d": "将地图 {{number}} 显示为 3D 地球",
     "show2d": "将地图 {{number}} 显示为 2D 地图",
     "only2d": "仅 2D",
-    "cesiumTokenHint": "在设置中添加 Cesium Ion 令牌即可使用地形和 Ion 影像"
+    "only3d": "仅 3D",
+    "noMapbox": "不支持 Mapbox",
+    "noArcgis": "不支持 ArcGIS",
+    "cesiumTokenHint": "在<settingsLink>设置 → 环境变量</settingsLink>中添加 Cesium Ion 令牌即可使用地形和 Ion 影像"
   },
   "renderer": {
     "basemap": "底图",
     "imagery": "影像",
     "projectBasemap": "项目底图",
     "layerUnsupported": "3D 地球不渲染此图层",
+    "layerCesiumOnly": "仅由 3D 地球渲染",
+    "layerMapboxUnsupported": "Mapbox 引擎不渲染此图层",
+    "layerArcgisUnsupported": "ArcGIS 引擎不渲染此图层",
+    "layerArcgisViewUnsupported": "当前 ArcGIS 视图不渲染此图层",
     "resetView": "重置视图",
     "scene3D": "3D 地球",
     "scene2D": "2D 地图",
     "sceneColumbus": "哥伦布视图",
     "fullscreenEnter": "全屏",
     "fullscreenExit": "退出全屏",
-    "fullscreenUnavailable": "全屏不可用"
+    "fullscreenUnavailable": "全屏不可用",
+    "mapboxTokenHint": "请在<settingsLink>设置 → 环境变量</settingsLink>中添加 Mapbox 访问令牌，以使用此渲染引擎。",
+    "arcgisKeyHint": "请在<settingsLink>设置 → 环境变量</settingsLink>中添加 ArcGIS API 密钥，以使用 Esri 底图样式。",
+    "pluginUnsupported": "此插件不支持所选的渲染引擎。"
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "复制坐标到剪贴板",
@@ -2099,6 +2214,14 @@
       "cesiumTokenDescription": "3D 地球（分屏视图窗格）无需令牌即可使用：它会渲染项目底图。访问令牌可额外提供 Cesium World Terrain 和 Ion 世界影像。请在 <tokenLink>ion.cesium.com/tokens</tokenLink> 创建免费账户，复制您的默认访问令牌，并粘贴到下方。",
       "cesiumTokenStorageNote": "仅存储在本设备上（不存储在项目文件中，因此永远不会被共享），并且仅发送到 Cesium Ion。在 Web 版本中，它与其他站点数据共用同一浏览器存储。",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "Mapbox 令牌",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "要使用 Mapbox，请在下方粘贴来自<tokenLink>您的 Mapbox 账户</tokenLink>的访问令牌。",
+      "mapboxTokenStorageNote": "仅存储在本设备上（不存储在项目文件中，因此永远不会被共享），并且仅发送到 Mapbox。在 Web 版本中，它与其他站点数据共用同一浏览器存储。",
+      "arcgisKeyTitle": "ArcGIS API 密钥",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "ArcGIS 渲染引擎无需密钥即可使用：它通过从 Esri CDN 加载的 ArcGIS Maps SDK for JavaScript 渲染项目底图和您的图层。API 密钥可额外提供 Esri 底图样式（街道、影像、地形等）。请在您的 ArcGIS 账户的<keyLink>开发者凭据</keyLink>中创建一个具有底图权限的密钥，并粘贴到下方。",
+      "arcgisKeyStorageNote": "仅存储在本设备上（不存储在项目文件中，因此永远不会被共享），并且仅发送到 Esri。在 Web 版本中，它与其他站点数据共用同一浏览器存储。",
       "variablesTitle": "环境变量",
       "variablesCount_other": "已启用 {{count}} 个运行时变量。",
       "secretsWarning": "变量值以纯文本形式存储在项目文件中，在共享项目时可能会暴露。除非项目文件保持私有，否则请勿在此放置机密信息。",
@@ -2196,6 +2319,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "来自公共数据源、具有时间信息的实时地球事件。",
+      "globeOnly": "实时地球数据会渲染在 Cesium 地球仪上。请切换到 3D 地球仪查看。",
+      "groups": {
+        "movement": "动态目标",
+        "cameras": "摄像头",
+        "infrastructure": "基础设施",
+        "events": "事件",
+        "utilities": "实用工具"
+      },
+      "earthquakes": "地震",
+      "spaceMissions": "太空任务（30 天）",
+      "activeFires": "活跃火点（24 小时）",
+      "satellites": "卫星",
+      "flights": "实时航班",
+      "militaryFlights": "军用航班",
+      "bikeShare": "共享单车",
+      "transit": "实时公共交通",
+      "streetTraffic": "模拟道路交通",
+      "mappedAlpr": "已标绘车牌识别摄像头",
+      "cctv": "公共闭路电视摄像头",
+      "cctvPopup": {
+        "liveSnapshot": "实时图像",
+        "provider": "提供商",
+        "attribution": "署名",
+        "privacy": "隐私"
+      },
+      "radio": "广播电台",
+      "datacenters": "数据中心",
+      "dams": "水坝",
+      "cables": "海底电缆",
+      "osmInfrastructure": "OSM 基础设施",
+      "loading": "正在更新…",
+      "updateFailed": "更新失败",
+      "noneInView": "当前视图中未找到该图层的任何要素。",
+      "never": "从未",
+      "lastUpdated": "最后更新：{{time}}",
+      "speed": "速度",
+      "speedRealTime": "实时 (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "密集卫星目录",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "无法加载 Starlink 目录：{{error}}。选择以重试。",
+      "denseDescription": "将完整的 Starlink 星座显示为轻量点（无标签或表格行）。"
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "项目",
@@ -2289,6 +2462,7 @@
       "imperial": "节 / 英尺",
       "metric": "公里/小时 / 米",
       "bankCamera": "转弯时倾斜地平线",
+      "bankCameraMapbox": "Mapbox GL 没有相机滚转轴，因此这里的地平线始终保持水平。飞机仍会侧倾并转弯。",
       "invertPitch": "反转俯仰轴",
       "knots": "kt",
       "kph": "km/h",
@@ -2431,10 +2605,13 @@
       "georss": "GeoRSS 图层",
       "video": "视频图层",
       "deckglViz": "Deck.gl 图层",
+      "cesiumIon": "Cesium Ion 资产",
+      "czml": "CZML 动态 3D 场景",
       "gltfModel": "3D 模型（glTF）",
       "postgres": "PostgreSQL 图层",
       "iceberg": "Apache Iceberg 图层",
-      "polyline": "编码折线"
+      "polyline": "编码折线",
+      "wcs": "WCS 图层"
     },
     "conversion": {
       "vectorToVector": "矢量转矢量",
@@ -2689,6 +2866,8 @@
       "splitViewSync": "同步视图",
       "renderingEngine": "渲染引擎",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "在 Google 地图中查看",
       "viewInGoogleEarth": "在 Google Earth 中查看",
@@ -2838,6 +3017,7 @@
       "saveProjectAsTitle": "项目另存为",
       "saveProjectAsDesc": "请输入文件名。点击“保存”后，项目将下载到您浏览器的下载文件夹。",
       "embedVectorTitle": "是否嵌入本地矢量数据？",
+      "embedEditedGeometryDesc": "此项目包含已编辑的几何图形。嵌入矢量数据（约 {{size}}）以保留更改。如果不嵌入，引用的图层将恢复原始几何图形，本地数据可能无法使用。",
       "embedVectorDesc": "此项目包含 {{count}} 个从您计算机加载的本地矢量图层。项目重新打开时浏览器无法重新读取这些文件，因此必须将其数据嵌入项目文件中才能恢复。嵌入会为文件增加约 {{size}} 的大小。",
       "embedVectorDescDesktop": "此项目包含 {{count}} 个从您计算机加载的本地矢量图层。您可以嵌入它们的数据以使项目自包含（增加约 {{size}}），也可以保存文件引用，在项目重新打开时从磁盘重新加载。引用可保持文件较小，但若源文件之后被移动或删除则会失效。",
       "embedVectorDescMas": "此项目包含 {{count}} 个从您计算机加载的本地矢量图层。Mac App Store 沙盒无法在 GeoLibre 关闭后保留对这些文件的访问权限，因此必须将其数据嵌入项目文件中才能恢复。嵌入会为文件增加约 {{size}} 的大小。",
@@ -2896,6 +3076,8 @@
       "maplibre-gl-esri-wayback": "历史影像",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "OSM 下载器",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "STAC 目录",
       "geolibre-planet-open-data": "Planet 开放数据",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -2907,6 +3089,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "Carto Light 底图",
       "geolibre-flight-simulator": "飞行模拟器",
+      "gods-eye-view": "上帝视角",
       "geolibre-route-animation": "路线动画",
       "geolibre-sun": "太阳模拟",
       "maplibre-atmosphere-effects": "大气效果",
@@ -3074,9 +3257,14 @@
     "openBuilder": "表达式构建器...",
     "invalidExpression": "请输入有效的布尔表达式。",
     "select": "选择要素",
+    "applyLayerFilter": "筛选图层",
+    "clearLayerFilter": "清除图层筛选",
+    "layerFilteredHint": "持久筛选正在隐藏该图层的部分要素。",
+    "layerFilteredBothHint": "持久筛选和快速过滤器正在隐藏该图层的部分要素。",
     "noLayers": "请添加包含要素的矢量图层以进行选择。",
     "needTwoLayers": "按位置选择需要两个包含要素的矢量图层。",
     "summary": "已选择 {{selected}}/{{total}} 个要素（匹配 {{matched}} 个）。",
+    "filterSummary": "已应用图层筛选：{{total}} 个要素中有 {{matched}} 个匹配。",
     "evaluationErrors": "{{count}} 个要素无法求值，未被匹配。",
     "unevaluableDisjoint": "{{count}} 个要素因几何无法求值而被排除。",
     "tooManyPairs": "此比较需要 {{pairs}} 次要素对测试（上限 {{limit}}）。请改用“处理 → GeoLibre → 矢量 → 按位置选择”并选择 Sidecar 引擎。",
@@ -3532,10 +3720,14 @@
     "title": "STAC 目录",
     "footprintLayerName": "STAC 搜索范围",
     "catalogSearch": "在 STAC Index 中查找公共目录",
+    "portolanCatalogSearch": "在 Portolan Registry 中查找公共目录",
     "catalogSearchPlaceholder": "搜索目录名称…",
     "indexLoading": "正在加载 STAC Index…",
+    "portolanIndexLoading": "正在加载 Portolan Registry…",
     "indexUnavailable": "STAC Index 不可用：请输入网址",
+    "portolanIndexUnavailable": "Portolan Registry 不可用：请输入网址",
     "indexLoadFailed": "无法加载 STAC Index",
+    "portolanIndexLoadFailed": "无法加载 Portolan Registry",
     "urlLabel": "STAC 目录或 API 网址",
     "connect": "连接",
     "connecting": "正在连接 STAC…",
@@ -4434,6 +4626,10 @@
       "errorStartSidecar": "无法启动 GeoLibre sidecar。",
       "errorStopSidecar": "无法停止 GeoLibre sidecar。",
       "noToolsFound": "未找到工具。",
+      "searchToolsByMeaning": "搜索工具或描述任务",
+      "searchingByMeaning": "正在按语义搜索工具目录",
+      "bestMatches": "最佳匹配",
+      "otherMatches": "其他匹配",
       "noParameters": "此工具没有参数。",
       "noOutput": "暂无输出。",
       "enabled": "启用",
@@ -4508,6 +4704,10 @@
                 "inside": "内侧（收缩）",
                 "both": "两侧"
               }
+            },
+            "dissolve": {
+              "label": "融合结果",
+              "description": "将各缓冲区合并为单个要素，并融合它们之间的重叠部分。合并后的图形不属于任何输入要素，因此属性会被丢弃；若要按属性融合，请对结果运行“融合”工具。"
             }
           }
         },
@@ -6320,6 +6520,7 @@
     "description": "保存、浏览和应用可复用的样式、符号、标注预设和色带，可跨图层与项目使用。",
     "searchPlaceholder": "搜索样式和标签…",
     "presetsSection": "内置预设",
+    "presetActions": "预设操作",
     "librarySection": "我的库",
     "projectSection": "此项目",
     "empty": "没有匹配的已保存样式。保存图层样式或导入样式库以开始使用。",
@@ -6683,6 +6884,7 @@
     "footerDeck": "更改会实时应用于 DuckDB deck.gl 图层样式。",
     "footerMaplibre": "更改会实时应用于 MapLibre 绘制属性。",
     "pluginPaintedFooter": "此图层由其插件绘制，插件提供了自己的样式控件。",
+    "serviceStyledFooter": "此图层保留其服务自带的样式；不透明度、顺序、缩放范围和筛选仍然生效。",
     "extrusion": {
       "color": "拉伸颜色",
       "opacity": "拉伸不透明度",
@@ -6878,6 +7080,11 @@
       "invalidExpression": "表达式无效",
       "openBuilder": "打开表达式构建器",
       "showFeatureId": "显示要素 ID 行",
+      "maxWidth": "弹出窗口宽度（像素）",
+      "maxWidthPlaceholder": "默认值",
+      "imageHeight": "图像高度（像素）",
+      "imageHeightPlaceholder": "默认值",
+      "sizeHint": "留空则使用默认值。图像会保持纵横比，因此需要加宽弹出窗口，照片才能用上额外的高度。",
       "fields": "字段",
       "allFields": "未选择任何字段，因此按数据自身的顺序显示全部可见字段。",
       "addField": "添加字段…",
@@ -6939,6 +7146,7 @@
     "allFieldsUsed": "每个字段都已有过滤器",
     "removeAll": "全部移除",
     "clearAll": "清除过滤器",
+    "clearAllWithExpression": "清除过滤器和已保存的表达式",
     "clearOne": "清除此过滤器",
     "clearOneNamed": "清除 {{field}} 上的过滤器",
     "remove": "移除过滤器",
@@ -7071,6 +7279,9 @@
     "saveEditsSuccess": "已将 {{count}} 个要素保存到源文件。",
     "saveEditsNoFeatures": "此图层没有可保存的要素。",
     "saveEditsError": "无法将编辑保存到源文件。",
+    "pendingTableDraftsBlocked": "属性表中有无法应用的未保存编辑。请修正或取消这些编辑后重试。",
+    "saveEditsToArcgis": "保存编辑到 ArcGIS 服务",
+    "saveEditsArcgisSuccess": "已保存到 ArcGIS：新增 {{inserted}} 个，更新 {{updated}} 个，删除 {{deleted}} 个。",
     "saveEditsToPostgis": "保存编辑到 PostGIS 表",
     "saveEditsPostgisSuccess": "已保存到 {{table}}：新增 {{inserted}} 个，更新 {{updated}} 个，删除 {{deleted}} 个。",
     "saveEditsPostgisSkippedFields": "没有匹配表列的字段未被保存：{{fields}}。",
@@ -7113,6 +7324,8 @@
     "renameGroup": "重命名分组",
     "moveGroupUp": "上移分组",
     "moveGroupDown": "下移分组",
+    "sortGroupAscending": "按 A 到 Z 排序",
+    "sortGroupDescending": "按 Z 到 A 排序",
     "ungroupKeepLayers": "取消分组（保留图层）",
     "deleteGroupAndLayers": "删除分组及图层",
     "groupActions": "分组操作",
@@ -7228,7 +7441,20 @@
     "stretchLinear": "线性",
     "stretchLog": "对数",
     "stretchSqrt": "平方根",
+    "viewportStretch": "视口拉伸",
+    "viewportMinMax": "视口最小 / 最大值",
+    "viewportPercentile": "视口 5–95 百分位",
+    "viewportStddev": "视口均值 ± 2 个标准差",
+    "viewportApply": "应用到视口",
+    "viewportStretching": "正在读取视口…",
+    "viewportStretchApplied": "已应用视口拉伸",
+    "viewportAuto": "地图移动时自动更新",
+    "viewportStretchNoView": "地图视图不可用。",
+    "viewportStretchNoValues": "视口内未找到栅格值。",
+    "viewportStretchNoRange": "视口内的值无法确定范围。",
+    "viewportStretchMoved": "读取完成前地图已移动。请再次应用。",
     "index": "指数",
+    "opacityClasses": "不透明度分级",
     "classifyToggle": "分为离散类别",
     "method": "方法",
     "methodEqualInterval": "等间隔",
@@ -7784,5 +8010,77 @@
     "catalogHuc12pp": "HUC12 出水口",
     "catalogNmwdiSt": "新墨西哥州水文站点",
     "catalogFlowlines": "NHDPlus 河段"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "请在此 ArcGIS 视图中使用 3D Tiles 的 tileset.json URL。Google Photorealistic 和 I3S 瓦片需要其他渲染引擎。",
+      "globeGoogleKeyRequired": "在地球视图中加载 Google Photorealistic 3D Tiles 需要在“设置”中配置 Google Maps API 密钥。"
+    },
+    "geolibre-osm-downloader": {
+      "title": "OSM 下载器",
+      "hint": "使用公共 Overpass API 下载当前地图区域的 OpenStreetMap 要素。",
+      "attribution": "数据 © OpenStreetMap 贡献者，基于 ODbL 许可提供。",
+      "featureType": "要素类型",
+      "presetBuildings": "建筑物",
+      "presetRoads": "道路",
+      "presetAmenities": "设施",
+      "presetWaterways": "水系",
+      "presetLanduse": "土地利用",
+      "presetCustom": "自定义标签",
+      "presetAll": "所有带标签的要素",
+      "tagKey": "标签键",
+      "tagValue": "标签值",
+      "tagKeyPlaceholder": "例如 shop",
+      "tagValuePlaceholder": "可选，例如 bakery",
+      "west": "西",
+      "south": "南",
+      "east": "东",
+      "north": "北",
+      "useMapExtent": "使用地图范围",
+      "download": "下载 OSM 数据",
+      "ready": "请选择区域和要素类型。",
+      "exportGeoJson": "保存 GeoJSON",
+      "mapUnavailable": "地图范围尚不可用。",
+      "extentApplied": "已应用地图范围。",
+      "downloading": "正在从 OpenStreetMap 下载…",
+      "noFeatures": "在此区域内未找到匹配的要素。",
+      "error": "无法下载 OSM 数据：{{message}}",
+      "added": "已将 {{count}} 个要素添加到地图。"
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "搜索当前地图区域的 IGN LiDAR HD 瓦片覆盖范围，将瓦片作为点云添加到地图，或从 IGN 的服务器下载其 COPC LAZ 文件。",
+      "attribution": "数据 © IGN — LiDAR HD，依据 Licence Ouverte 2.0 发布。",
+      "west": "西",
+      "south": "南",
+      "east": "东",
+      "north": "北",
+      "useMapExtent": "使用地图范围",
+      "search": "搜索瓦片",
+      "addToMap": "添加到地图",
+      "download": "下载",
+      "ready": "选择一个区域并搜索 LiDAR HD 瓦片。",
+      "mapUnavailable": "地图范围尚不可用。",
+      "extentApplied": "已应用地图范围。",
+      "searching": "正在搜索 IGN LiDAR HD 瓦片…",
+      "noTiles": "此区域未找到 LiDAR HD 瓦片。",
+      "noDownload": "未发布点云",
+      "layerName": "IGN LiDAR HD 瓦片",
+      "found": "找到 {{count}} 个瓦片。",
+      "foundTruncated": "正在显示 {{matched}} 个瓦片中的前 {{count}} 个。缩小搜索区域以查看其余瓦片。",
+      "addedToMap": "已将 {{name}} 添加到地图。",
+      "alreadyOnMap": "{{name}} 已在地图上。",
+      "unsupportedRenderer": "点云需要 MapLibre 或 Mapbox 渲染引擎。",
+      "addError": "无法将 {{name}} 添加到地图：{{message}}",
+      "error": "无法搜索 IGN LiDAR HD 瓦片：{{message}}",
+      "selectAll": "全选",
+      "selectTile": "选择 {{name}}",
+      "addSelectedToMap": "将所选项添加到地图",
+      "addSelectedToMapCount": "将所选的 {{count}} 项添加到地图",
+      "addingSelected": "正在将 {{count}} 个瓦片添加到地图…",
+      "addedSelectedCount": "已将 {{count}} 个瓦片添加到地图。",
+      "alreadyOnMapCountPlural": "{{count}} 个瓦片已在地图上。",
+      "addSelectedFailedCount": "无法添加 {{count}} 个瓦片。"
+    }
   }
 }

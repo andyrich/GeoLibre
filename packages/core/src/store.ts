@@ -1,3 +1,4 @@
+import { isSourceDerivedLayerName, uniqueImportedLayerName } from "./file-name";
 import type { FeatureCollection } from "geojson";
 import { v4 as uuidv4 } from "uuid";
 import { create } from "zustand";
@@ -36,6 +37,8 @@ import {
   DEFAULT_LAYER_GROUP_OPACITY,
   normalizeGroupContiguity,
   reorderLayerGroupInPanel,
+  sortLayerGroupInPanel,
+  type LayerGroupSortOrder,
 } from "./layer-groups";
 import {
   DEFAULT_BASEMAP,
@@ -220,6 +223,40 @@ export interface GpsStatusFix {
   speed: number | null;
   /** Fix time in epoch milliseconds. */
   timestamp: number;
+}
+
+/** An explicit background choice replaces the active renderer's override. */
+function preferencesForBasemap(state: AppState, ellipsoidId = state.preferences.map.ellipsoidId) {
+  const clearMapbox =
+    state.primaryRenderer === "mapbox" && state.preferences.map.mapboxStyleUrl !== undefined;
+  // Any Cesium or ArcGIS pane, not only a primary one: split panes pick the
+  // renderer independently, and a pinned globe imagery or Esri style would
+  // otherwise ignore the picker.
+  const clearCesium =
+    state.preferences.map.cesiumBasemap !== "project" &&
+    (state.primaryRenderer === "cesium" ||
+      state.secondaryMapViews.some((pane) => pane.viewKind === "cesium"));
+  const clearArcgis =
+    state.preferences.map.arcgisBasemap !== undefined &&
+    (state.primaryRenderer === "arcgis" ||
+      state.secondaryMapViews.some((pane) => pane.viewKind === "arcgis"));
+  if (
+    !clearMapbox &&
+    !clearCesium &&
+    !clearArcgis &&
+    ellipsoidId === state.preferences.map.ellipsoidId
+  )
+    return state.preferences;
+  return {
+    ...state.preferences,
+    map: {
+      ...state.preferences.map,
+      ...(clearMapbox ? { mapboxStyleUrl: undefined } : {}),
+      ...(clearCesium ? { cesiumBasemap: "project" as const } : {}),
+      ...(clearArcgis ? { arcgisBasemap: undefined } : {}),
+      ellipsoidId,
+    },
+  };
 }
 
 export interface AppState {
@@ -739,6 +776,8 @@ export interface AppState {
    * array to remove every control.
    */
   setLayerQuickFilters: (id: string, filters: LayerQuickFilter[]) => void;
+  /** Set or clear the project-persisted expression filter for a layer. */
+  setLayerFilterExpression: (id: string, expression: unknown[] | null) => void;
   reorderLayer: (id: string, direction: "up" | "down") => void;
   moveLayer: (id: string, targetIndex: number) => void;
   moveLayersRelative: (
@@ -814,6 +853,11 @@ export interface AppState {
   ) => void;
   moveLayerGroupToGroup: (id: string, parentId: string | null) => void;
   reorderLayerGroup: (id: string, direction: "up" | "down") => void;
+  /**
+   * Sort a group's direct children by name, A to Z or Z to A (top of panel
+   * first), collating by `locale` (the app's display language) when given.
+   */
+  sortLayerGroup: (id: string, order: LayerGroupSortOrder, locale?: string) => void;
 
   addComment: (comment: ProjectComment) => void;
   replyToComment: (commentId: string, reply: CommentReply) => void;
@@ -826,6 +870,15 @@ export interface AppState {
 export const IDENTIFY_ALL_LAYERS_ID = "__geolibre_identify_all_layers__";
 
 const MAX_RECENT_PROJECTS = 10;
+
+/**
+ * The layer types {@link AppState.addTileLayer} accepts. Each renders through
+ * the raster tile path, which is why the layer's `source.type` is always
+ * `"raster"`.
+ */
+const RASTER_TILE_LAYER_TYPES: ReadonlySet<string> = new Set<
+  NonNullable<AddTileLayerOptions["type"]>
+>(["xyz", "wms", "wmts", "raster"]);
 
 /**
  * A fresh, inactive collaboration slice (no live session). Frozen (like
@@ -1394,35 +1447,22 @@ export const useAppStore = create<AppState>()(
             isDirty: true,
           };
         }),
-      setBasemapStyleUrl: (url) => set({ basemapStyleUrl: url, isDirty: true }),
+      setBasemapStyleUrl: (url) =>
+        set((state) => ({
+          basemapStyleUrl: url,
+          preferences: preferencesForBasemap(state),
+          isDirty: true,
+        })),
       applyPlanetaryBasemap: (basemap) =>
         set((state) => ({
           basemapStyleUrl: basemap.styleUrl,
-          preferences:
-            state.preferences.map.ellipsoidId === basemap.ellipsoidId
-              ? state.preferences
-              : {
-                  ...state.preferences,
-                  map: {
-                    ...state.preferences.map,
-                    ellipsoidId: basemap.ellipsoidId,
-                  },
-                },
+          preferences: preferencesForBasemap(state, basemap.ellipsoidId),
           isDirty: true,
         })),
       restoreEarthBasemap: (styleUrl) =>
         set((state) => ({
           basemapStyleUrl: styleUrl,
-          preferences:
-            state.preferences.map.ellipsoidId === DEFAULT_ELLIPSOID_ID
-              ? state.preferences
-              : {
-                  ...state.preferences,
-                  map: {
-                    ...state.preferences.map,
-                    ellipsoidId: DEFAULT_ELLIPSOID_ID,
-                  },
-                },
+          preferences: preferencesForBasemap(state, DEFAULT_ELLIPSOID_ID),
           isDirty: true,
         })),
       setBasemapVisible: (visible) => set({ basemapVisible: visible, isDirty: true }),
@@ -1449,7 +1489,9 @@ export const useAppStore = create<AppState>()(
           selectedFeatureId: null,
           selectedFeatureIds: [],
         }),
-      selectFeature: (id) => set({ selectedFeatureId: id, selectedFeatureIds: id ? [id] : [] }),
+      // `""` is a valid feature id; only `null` clears the selection.
+      selectFeature: (id) =>
+        set({ selectedFeatureId: id, selectedFeatureIds: id === null ? [] : [id] }),
       selectFeatures: (ids, anchorId) =>
         set({
           selectedFeatureIds: ids,
@@ -1824,6 +1866,24 @@ export const useAppStore = create<AppState>()(
       addLayer: (layer, beforeLayerId = null) =>
         set((s) => {
           const layers = [...s.layers];
+          // Plugin source identifiers (for example pmtiles://) are not local files.
+          const { sourcePath } = layer;
+          const localSource =
+            sourcePath &&
+            (!/^[a-z][a-z0-9+.-]*:\/\//i.test(sourcePath) ||
+              /^(content|file):\/\//i.test(sourcePath));
+          // Only filename-derived names are deduplicated; an explicit name (an
+          // embedded document title, a tool output label, a user-typed name)
+          // is kept as supplied.
+          if (localSource && isSourceDerivedLayerName(layer.name, sourcePath)) {
+            layer = {
+              ...layer,
+              name: uniqueImportedLayerName(
+                layer.name,
+                layers.map((item) => item.name),
+              ),
+            };
+          }
           const beforeIndex = beforeLayerId ? layers.findIndex((l) => l.id === beforeLayerId) : -1;
           const layerWithBeforeId =
             beforeLayerId && beforeIndex < 0
@@ -1937,6 +1997,9 @@ export const useAppStore = create<AppState>()(
 
       setLayerQuickFilters: (id, filters) =>
         get().updateLayer(id, { quickFilters: filters.length > 0 ? filters : undefined }),
+
+      setLayerFilterExpression: (id, expression) =>
+        get().updateLayer(id, { filterExpression: expression ?? undefined }),
 
       setLayerVisibility: (id, visible) => get().updateLayer(id, { visible }),
 
@@ -2085,6 +2148,18 @@ export const useAppStore = create<AppState>()(
       },
 
       addTileLayer: (name, options, beforeLayerId = null) => {
+        // Every layer this builds carries a raster source, so a non-raster
+        // `type` from an untyped JS caller (e.g. "vector-tiles") would persist
+        // a layer whose `type` and `source.type` disagree. Reject it instead of
+        // silently mislabelling the source; vector tiles need their own style
+        // layers and go through the vector-tile path, not this one.
+        const type = options.type ?? "xyz";
+        if (!RASTER_TILE_LAYER_TYPES.has(type)) {
+          throw new Error(
+            `addTileLayer: unsupported type "${String(type)}"; expected one of ` +
+              `${[...RASTER_TILE_LAYER_TYPES].join(", ")}. Only raster tile layers are supported.`,
+          );
+        }
         const id = uuidv4();
         // Trim each template and drop blanks, then reject a registration that
         // sanitizes down to nothing: syncRasterTileLayer returns early on an
@@ -2112,10 +2187,11 @@ export const useAppStore = create<AppState>()(
         const layer: GeoLibreLayer = {
           id,
           name,
-          type: options.type ?? "xyz",
+          type,
           source: {
             // Extra source fields (e.g. WMS layers/styles) merge first so the
-            // required raster descriptor below always wins.
+            // required raster descriptor below always wins. `type` above is
+            // validated as a raster kind, so "raster" here always agrees with it.
             ...(options.source ?? {}),
             type: "raster",
             tiles,
@@ -2355,6 +2431,13 @@ export const useAppStore = create<AppState>()(
           const moved = reorderLayerGroupInPanel(s.layers, s.layerGroups, id, direction);
           if (!moved) return s;
           return { layers: moved.layers, layerGroups: moved.groups, isDirty: true };
+        }),
+
+      sortLayerGroup: (id, order, locale) =>
+        set((s) => {
+          const sorted = sortLayerGroupInPanel(s.layers, s.layerGroups, id, order, locale);
+          if (!sorted) return s;
+          return { layers: sorted.layers, layerGroups: sorted.groups, isDirty: true };
         }),
 
       newProject: (options = {}) => {

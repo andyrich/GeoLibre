@@ -22,6 +22,7 @@
     "noMatches": "Geen resultaten.",
     "addFailed": "Kan deze gegevensbron niet toevoegen.",
     "builtinBadge": "ingebouwd",
+    "configBadge": "geconfigureerd",
     "newConnection": "Nieuwe {{kind}}-verbinding",
     "loadingTables": "Tabellen laden…",
     "files": "Bestanden",
@@ -347,6 +348,22 @@
       "polyline": {
         "label": "Gecodeerde polylijnlaag toevoegen",
         "description": "Gecodeerde polylijn-tekenreeksen (Google, OSRM, Valhalla) uit tekst of bestanden importeren als vectorlijnen."
+      },
+      "cesiumIon": {
+        "label": "Cesium Ion-asset toevoegen",
+        "description": "Voeg een 3D Tiles-tileset of beelden uit Cesium Ion toe op asset-id. Wordt op de 3D-globe weergegeven met uw Cesium Ion-token."
+      },
+      "czml": {
+        "label": "Dynamische CZML-3D-laag toevoegen",
+        "description": "Laad een dynamisch Cesium Language-document (CZML) dat banen, trajecten, voertuigroutes en in de tijd veranderende 3D-scènes op de globe beschrijft."
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "Laad KML of KMZ met oorspronkelijke stijlen, overlays en netwerkkoppelingen op de globe."
+      },
+      "wcs": {
+        "description": "Laad een numerieke GeoTIFF-uitsnede van een WCS 1.0.0-service.",
+        "label": "WCS-laag"
       }
     },
     "shared": {
@@ -386,6 +403,7 @@
       "loadAria": "Een opgeslagen service laden",
       "loadPlaceholder": "Een opgeslagen service laden…",
       "builtin": "{{name}} (ingebouwd)",
+      "config": "{{name}} (geconfigureerd)",
       "deleteAria": "Opgeslagen service verwijderen",
       "empty": "Nog geen opgeslagen services — vul het formulier in en kies “Huidige opslaan”.",
       "name": "Naam",
@@ -403,6 +421,41 @@
       "imported_other": "{{count}} services geïmporteerd.",
       "importedWithDropped_one": "{{count}} service geïmporteerd ({{dropped}} overgeslagen — bibliotheek vol).",
       "importedWithDropped_other": "{{count}} services geïmporteerd ({{dropped}} overgeslagen — bibliotheek vol)."
+    },
+    "cesiumIon": {
+      "defaultName": "Cesium Ion-asset",
+      "assetId": "Asset-ID",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "Beelden",
+      "altitudeOffset": "Hoogteverschuiving (m)",
+      "quickPicks": "Snelle keuzes",
+      "quickPicksPlaceholder": "Kies een asset…",
+      "quickPicksGlobal": "Bij elk ion-account inbegrepen",
+      "quickPicksDepot": "Asset Depot-voorbeelden",
+      "hint": "Asset-id's vindt u onder ‘My Assets’ op ion.cesium.com. De asset moet gedeeld zijn met het token dat in Instellingen is ingesteld.",
+      "depotHint": "Asset Depot-voorbeelden streamen pas nadat je ze via ion.cesium.com → Asset Depot aan je account toevoegt.",
+      "errorAssetId": "Voer een Cesium Ion-asset-id in (een positief geheel getal).",
+      "errorAltitude": "Voer de hoogteverschuiving in als een aantal meters.",
+      "tokenMissing": "Er is geen Cesium Ion-token ingesteld. Voeg er een toe via Instellingen → Omgevingsvariabelen (VITE_CESIUM_TOKEN), anders kan de asset niet worden geladen."
+    },
+    "czml": {
+      "defaultName": "Dynamische CZML-scène",
+      "url": "CZML-URL",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "Lokaal bestand",
+      "file": "Bestand",
+      "quickPicks": "Voorbeelden van dynamische scènes",
+      "hint": "CZML-streams of -bestanden beschrijven dynamische 3D-posities, animaties en banen die gesynchroniseerd zijn met de klok van de globe.",
+      "errorUrl": "Voer een geldige URL van een CZML-eindpunt in.",
+      "errorChooseFile": "Selecteer een CZML-bestand (.czml of .json) om te laden.",
+      "errorFileMissing": "Kan het geselecteerde bestand niet lezen.",
+      "errorInvalidCzml": "Het bestand bevat geen geldig CZML-document (een JSON-array of pakketobject werd verwacht).",
+      "readError": "Kan CZML-gegevens niet lezen."
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "KML-/KMZ-URL",
+      "errorSource": "Voer een KML/KMZ-URL in of kies een bestand."
     },
     "xyz": {
       "defaultName": "XYZ-laag",
@@ -465,6 +518,7 @@
       "selectType_one": "Kies uit {{count}} featuretype",
       "selectType_other": "Kies uit {{count}} featuretypen",
       "noTypesFound": "Er zijn geen featuretypen gevonden voor deze service.",
+      "errorNoFeatures": "Dit featuretype heeft geen features geretourneerd.",
       "retrieveError": "Kan geen featuretypen ophalen van deze service."
     },
     "wmts": {
@@ -912,9 +966,53 @@
       "cellSize": "Celgrootte",
       "lineWidth": "Lijndikte",
       "extrusion": "3D-extrusie",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "Lokaal model kiezen",
+      "sampleDataset": "Voorbeelddataset",
+      "sampleCustom": "Eigen model",
+      "sampleAirplane": "Vliegtuig — San Francisco",
+      "sampleShanghai": "Shanghai — stadscentrum",
+      "modelFileHint": "Kies een GLB-bestand of een op zichzelf staand glTF-bestand. Lokale modellen worden in opgeslagen projecten ingesloten, waardoor het project groter wordt.",
+      "modelExternalResources": "Dit model verwijst naar afzonderlijke bestanden. Exporteer het als GLB met ingesloten texturen en buffers en probeer het opnieuw.",
+      "modelTooLarge": "Dit model is groter dan de limiet van {{limit}} MB voor insluiten in een project. Host het en voeg het via een URL toe.",
+      "modelFileError": "Kan dit model niet lezen. Kies een geldig glTF 2.0- of GLB-bestand."
     },
-    "nonGeographicCoordinates": "De coördinaten in {{names}} zijn geen lengte-/breedtegraad, dus er wordt niets op de kaart getekend. Het CRS klopt niet — herprojecteer de gegevens (of corrigeer de .prj) en laad ze opnieuw."
+    "nonGeographicCoordinates": "De coördinaten in {{names}} zijn geen lengte-/breedtegraad, dus er wordt niets op de kaart getekend. Het CRS klopt niet — herprojecteer de gegevens (of corrigeer de .prj) en laad ze opnieuw.",
+    "pmtiles": {
+      "errorUrl": "Voer een geldige HTTP- of HTTPS-URL voor PMTiles in.",
+      "errorMlt": "ArcGIS vereist MVT-vectortegels, geen MLT."
+    },
+    "lidar": {
+      "errorUrl": "Voer een geldige HTTP- of HTTPS-URL voor LiDAR in."
+    },
+    "zarr": {
+      "errorUrl": "Voer een geldige HTTP- of HTTPS-URL voor Zarr in.",
+      "errorColorLimits": "De maximale kleurgrens moet groter zijn dan de minimale."
+    },
+    "raster": {
+      "errorSource": "Voer een GeoTIFF-URL in of kies een bestand."
+    },
+    "wcs": {
+      "coverage": "Coverage",
+      "retrieve": "Coverages ophalen",
+      "select": "Selecteer een coverage",
+      "extent": "Coveragebereik gebruiken",
+      "width": "Breedte (pixels)",
+      "height": "Hoogte (pixels)",
+      "hint": "Downloadt een GeoTIFF in EPSG:4326 met de gekozen pixelafmetingen. Waarden kunnen opnieuw worden bemonsterd. Sla het raster op om de gedownloade gegevens te behouden.",
+      "errors": {
+        "xml": "De service heeft ongeldige XML teruggestuurd.",
+        "version": "Deze bron vereist WCS 1.0.0. De service heeft een niet-ondersteund antwoord teruggestuurd.",
+        "empty": "Er zijn geen overeenkomende coverages beschikbaar.",
+        "format": "De coverage biedt geen GeoTIFF-uitvoer aan.",
+        "crs": "De coverage moet EPSG:4326 ondersteunen voor aanvragen en uitvoer.",
+        "size": "Kies afmetingen van 1 tot 4096 pixels. Downloads zijn beperkt tot 128 MB.",
+        "metadata": "De service heeft meer metadata teruggestuurd dan GeoLibre kan laden. Metadata-antwoorden zijn beperkt tot 32 MB.",
+        "response": "De service heeft geen geldige GeoTIFF teruggestuurd.",
+        "bounds": "Voer een geldig kader in: west/oost binnen -180 tot 180, zuid/noord binnen -90 tot 90, met west < oost en zuid < noord.",
+        "url": "Voer een WCS-service-URL in."
+      }
+    }
   },
   "offline": {
     "title": "Offline gebied downloaden",
@@ -1354,6 +1452,12 @@
     "errorFallback": "Kan het project niet delen.",
     "usernameRequired": "Stel een gebruikersnaam in voor uw {{shareHost}}-account voordat u deelt. Open uw accountinstellingen om er een te kiezen en probeer het opnieuw.",
     "openAccountSettings": "Accountinstellingen openen",
+    "shareAnyway": "Toch delen",
+    "localWarningTitle_one": "{{count}} laag zal ontbreken in de gedeelde kaart",
+    "localWarningTitle_other": "{{count}} lagen zullen ontbreken in de gedeelde kaart",
+    "localWarningBody": "{{shareHost}} bewaart alleen het projectbestand, nooit de bestanden op uw computer. Ontvangers openen het project in een browser, die uw schijf niet kan lezen, dus deze lagen zijn leeg voor iedereen behalve u.",
+    "localWarningAdvice": "Om ze op te nemen, converteert u rasters naar Cloud Optimized GeoTIFF en vectoren naar PMTiles of GeoParquet, host u de bestanden op een openbare HTTPS-server zoals GitHub of Hugging Face, voegt u ze via een URL aan de kaart toe en deelt u opnieuw. Kleine lokale vectorlagen worden automatisch in het project ingesloten.",
+    "localWarningLearnMore": "Meer informatie",
     "readinessChecking": "Bezig met controleren of ontvangers uw gegevens kunnen laden…",
     "readinessUnavailable": "De controle van de gegevensbronnen kon niet worden uitgevoerd.",
     "readinessAllReachable_one": "{{count}} gegevensbron lijkt bereikbaar voor ontvangers.",
@@ -1434,7 +1538,7 @@
   },
   "printLayout": {
     "title": "Afdruklay-out",
-    "description": "Stel een afdrukklare kaart samen met een titel, legenda, schaalbalk en noordpijl, en exporteer deze vervolgens naar PNG of PDF.",
+    "description": "Stel een afdrukklare kaart samen met een titel, legenda, schaalbalk en noordpijl, en exporteer deze vervolgens naar PNG, PDF of SVG.",
     "preview": "Voorbeeld",
     "resizeControls": "Formaat van bedieningspaneel wijzigen",
     "resizeDialog": "Formaat van dialoogvenster wijzigen",
@@ -1442,6 +1546,7 @@
     "copyToClipboard": "Kopiëren naar klembord",
     "copied": "Gekopieerd",
     "exportPng": "PNG exporteren",
+    "exportSvg": "SVG exporteren",
     "exportPdf": "PDF exporteren",
     "titleLabel": "Titel",
     "titlePlaceholder": "Kaarttitel",
@@ -1864,24 +1969,35 @@
     "noLayers": "Nog geen lagen",
     "labelPlaceholder": "Label",
     "labelLabel": "Label voor kaart {{number}}",
+    "renderingEngineLabel": "Renderengine voor kaart {{number}}",
     "removePane": "Kaart {{number}} verwijderen",
     "show3d": "Kaart {{number}} weergeven als 3D-globe",
     "show2d": "Kaart {{number}} weergeven als 2D-kaart",
     "only2d": "Alleen 2D",
-    "cesiumTokenHint": "Voeg in Instellingen een Cesium Ion-token toe voor terrein en Ion-beelden"
+    "only3d": "Alleen 3D",
+    "noMapbox": "Geen Mapbox",
+    "noArcgis": "Geen ArcGIS",
+    "cesiumTokenHint": "Voeg via <settingsLink>Instellingen → Omgevingsvariabelen</settingsLink> een Cesium Ion-token toe voor terrein en Ion-beelden"
   },
   "renderer": {
     "basemap": "Achtergrondkaart",
     "imagery": "Beelden",
     "projectBasemap": "Achtergrondkaart van het project",
     "layerUnsupported": "Niet weergegeven door de 3D-globe",
+    "layerCesiumOnly": "Alleen weergegeven door de 3D-globe",
+    "layerMapboxUnsupported": "Niet weergegeven door de Mapbox-engine",
+    "layerArcgisUnsupported": "Niet weergegeven door de ArcGIS-engine",
+    "layerArcgisViewUnsupported": "Niet weergegeven in deze ArcGIS-weergave",
     "resetView": "Weergave herstellen",
     "scene3D": "3D-globe",
     "scene2D": "2D-kaart",
     "sceneColumbus": "Columbus-weergave",
     "fullscreenEnter": "Volledig scherm",
     "fullscreenExit": "Volledig scherm verlaten",
-    "fullscreenUnavailable": "Volledig scherm niet beschikbaar"
+    "fullscreenUnavailable": "Volledig scherm niet beschikbaar",
+    "mapboxTokenHint": "Voeg uw Mapbox-toegangstoken toe via <settingsLink>Instellingen → Omgevingsvariabelen</settingsLink> om deze renderer te gebruiken.",
+    "arcgisKeyHint": "Voeg een ArcGIS-API-sleutel toe via <settingsLink>Instellingen → Omgevingsvariabelen</settingsLink> voor de achtergrondkaartstijlen van Esri.",
+    "pluginUnsupported": "Deze plugin ondersteunt de geselecteerde renderer niet."
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "Coördinaten naar klembord kopiëren",
@@ -2144,6 +2260,14 @@
       "cesiumTokenDescription": "De 3D-globe (een gesplitst weergavepaneel) werkt zonder token: hij toont de achtergrondkaart van het project. Een toegangstoken voegt Cesium World Terrain en Ion-wereldbeelden toe. Maak een gratis account aan op <tokenLink>ion.cesium.com/tokens</tokenLink>, kopieer uw standaard toegangstoken en plak het hieronder.",
       "cesiumTokenStorageNote": "Lokaal opgeslagen op dit apparaat (niet in het projectbestand, dus nooit gedeeld) en alleen verzonden naar Cesium Ion. In de webversie wordt dezelfde browseropslag gebruikt als voor andere sitegegevens.",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "Mapbox-token",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "Plak hieronder een toegangstoken van <tokenLink>uw Mapbox-account</tokenLink> om Mapbox te gebruiken.",
+      "mapboxTokenStorageNote": "Lokaal opgeslagen op dit apparaat (niet in het projectbestand, dus nooit gedeeld) en alleen verzonden naar Mapbox. In de webversie wordt dezelfde browseropslag gebruikt als voor andere sitegegevens.",
+      "arcgisKeyTitle": "ArcGIS-API-sleutel",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "De ArcGIS-renderer werkt zonder sleutel: hij toont de achtergrondkaart van het project en uw lagen via de ArcGIS Maps SDK for JavaScript, geladen vanaf het CDN van Esri. Een API-sleutel voegt de achtergrondkaartstijlen van Esri toe (Straten, Beelden, Topografisch, …). Maak er een aan onder <keyLink>ontwikkelaarsreferenties</keyLink> in uw ArcGIS-account met het recht Achtergrondkaarten en plak hem hieronder.",
+      "arcgisKeyStorageNote": "Lokaal opgeslagen op dit apparaat (niet in het projectbestand, dus nooit gedeeld) en alleen verzonden naar Esri. In de webversie wordt dezelfde browseropslag gebruikt als voor andere sitegegevens.",
       "variablesTitle": "Omgevingsvariabelen",
       "variablesCount_one": "{{count}} ingeschakelde runtimevariabele.",
       "variablesCount_other": "{{count}} ingeschakelde runtimevariabelen.",
@@ -2243,6 +2367,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "Live, tijdgebonden gebeurtenissen op aarde uit openbare datafeeds.",
+      "globeOnly": "Live wereldbolfeeds worden op de Cesium-wereldbol weergegeven. Schakel over naar de 3D-wereldbol om ze te bekijken.",
+      "groups": {
+        "movement": "Beweging",
+        "cameras": "Camera's",
+        "infrastructure": "Infrastructuur",
+        "events": "Gebeurtenissen",
+        "utilities": "Hulpmiddelen"
+      },
+      "earthquakes": "Aardbevingen",
+      "spaceMissions": "Ruimtemissies (30 dagen)",
+      "activeFires": "Actieve branden (24 uur)",
+      "satellites": "Satellieten",
+      "flights": "Livevluchten",
+      "militaryFlights": "Militaire vluchten",
+      "bikeShare": "Deelfietsen",
+      "transit": "Live openbaar vervoer",
+      "streetTraffic": "Gesimuleerd wegverkeer",
+      "mappedAlpr": "Gekarteerde kentekencamera's",
+      "cctv": "Openbare CCTV-camera's",
+      "cctvPopup": {
+        "liveSnapshot": "Livebeeld",
+        "provider": "Provider",
+        "attribution": "Naamsvermelding",
+        "privacy": "Privacy"
+      },
+      "radio": "Radiozenders",
+      "datacenters": "Datacenters",
+      "dams": "Dammen",
+      "cables": "Onderzeese kabels",
+      "osmInfrastructure": "OSM-infrastructuur",
+      "loading": "Bijwerken…",
+      "updateFailed": "Bijwerken mislukt",
+      "noneInView": "Geen features gevonden in de huidige weergave voor deze laag.",
+      "never": "Nooit",
+      "lastUpdated": "Laatst bijgewerkt: {{time}}",
+      "speed": "Snelheid",
+      "speedRealTime": "Realtime (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "Dichte satellietcatalogus",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "De Starlink-catalogus kon niet worden geladen: {{error}}. Selecteer om opnieuw te proberen.",
+      "denseDescription": "Toon de volledige Starlink-constellatie als lichte punten (zonder labels of tabelrijen)."
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "Project",
@@ -2336,6 +2510,7 @@
       "imperial": "Knopen / voet",
       "metric": "km/u / meter",
       "bankCamera": "Horizon kantelen in bochten",
+      "bankCameraMapbox": "Mapbox GL heeft geen camerarol, dus de horizon blijft hier waterpas. Het vliegtuig helt en draait nog steeds.",
       "invertPitch": "Stampas omkeren",
       "knots": "kt",
       "kph": "km/u",
@@ -2479,9 +2654,12 @@
       "georss": "GeoRSS-laag",
       "video": "Videolaag",
       "deckglViz": "Deck.gl-laag",
+      "cesiumIon": "Cesium Ion-asset",
+      "czml": "Dynamische CZML-3D-scène",
       "gltfModel": "3D-model (glTF)",
       "postgres": "PostgreSQL-laag",
-      "iceberg": "Apache Iceberg-laag"
+      "iceberg": "Apache Iceberg-laag",
+      "wcs": "WCS-laag"
     },
     "conversion": {
       "vectorToVector": "Vector naar vector",
@@ -2736,6 +2914,8 @@
       "splitViewSync": "Weergaven synchroniseren",
       "renderingEngine": "Renderengine",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "Bekijken in Google Maps",
       "viewInGoogleEarth": "Bekijken in Google Earth",
@@ -2889,6 +3069,7 @@
       "saveProjectAsTitle": "Project opslaan als",
       "saveProjectAsDesc": "Voer een bestandsnaam in. Het project wordt gedownload naar de downloadmap van uw browser wanneer u op Opslaan klikt.",
       "embedVectorTitle": "Lokale vectorgegevens insluiten?",
+      "embedEditedGeometryDesc": "Dit project bevat bewerkte geometrieën. Sluit de vectorgegevens in (ongeveer {{size}}) om ze te behouden. Zonder insluiting worden lagen met verwijzingen heropend met hun oorspronkelijke geometrieën en zijn lokale gegevens mogelijk niet beschikbaar.",
       "embedVectorDesc": "Dit project bevat {{count}} lokale vectorlaag/-lagen die vanaf uw computer zijn geladen. De browser kan deze niet opnieuw lezen wanneer het project opnieuw wordt geopend, dus de gegevens moeten in het projectbestand worden ingesloten om te kunnen worden hersteld. Insluiten voegt ongeveer {{size}} toe aan het bestand.",
       "embedVectorDescDesktop": "Dit project bevat {{count}} lokale vectorlaag/-lagen die vanaf uw computer zijn geladen. Sluit de gegevens in om het project op zichzelf staand te maken (voegt ongeveer {{size}} toe), of sla bestandsverwijzingen op die opnieuw worden geladen vanaf schijf wanneer het project opnieuw wordt geopend. Verwijzingen houden het bestand klein, maar breken als een bronbestand later wordt verplaatst of verwijderd.",
       "embedVectorDescMas": "Dit project bevat {{count}} lokale vectorlaag/-lagen die vanaf uw computer zijn geladen. De Mac App Store-sandbox kan de toegang tot deze bestanden niet behouden nadat GeoLibre is gesloten. Daarom moeten de gegevens in het projectbestand worden ingesloten om te kunnen worden hersteld. Insluiten voegt ongeveer {{size}} toe aan het bestand.",
@@ -2946,6 +3127,8 @@
       "maplibre-gl-esri-wayback": "Historische beelden",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "OSM-downloader",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "STAC-catalogi",
       "geolibre-planet-open-data": "Open data van Planet",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -2957,6 +3140,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "Carto Light-basiskaart",
       "geolibre-flight-simulator": "Vluchtsimulator",
+      "gods-eye-view": "Alziend overzicht",
       "geolibre-route-animation": "Route-animatie",
       "geolibre-sun": "Zonsimulatie",
       "maplibre-atmosphere-effects": "Atmosferische effecten",
@@ -3132,9 +3316,14 @@
     "openBuilder": "Expressie-editor...",
     "invalidExpression": "Voer een geldige booleaanse expressie in.",
     "select": "Objecten selecteren",
+    "applyLayerFilter": "Laag filteren",
+    "clearLayerFilter": "Laagfilter wissen",
+    "layerFilteredHint": "Een permanent filter verbergt een deel van de objecten van deze laag.",
+    "layerFilteredBothHint": "Een permanent filter en een snelfilter verbergen een deel van de objecten van deze laag.",
     "noLayers": "Voeg een vectorlaag met objecten toe om een selectie te maken.",
     "needTwoLayers": "Selecteren op locatie vereist twee vectorlagen met objecten.",
     "summary": "{{selected}} van {{total}} object(en) geselecteerd ({{matched}} overeenkomsten).",
+    "filterSummary": "Laagfilter toegepast: {{matched}} van {{total}} object(en) komen overeen.",
     "evaluationErrors": "{{count}} object(en) konden niet worden geëvalueerd en kwamen niet overeen.",
     "unevaluableDisjoint": "{{count}} object(en) zijn uitgesloten omdat hun geometrie niet kon worden geëvalueerd.",
     "tooManyPairs": "Deze vergelijking vereist {{pairs}} object-paartests (limiet {{limit}}). Gebruik in plaats daarvan Verwerking → GeoLibre → Vector → Selecteren op locatie met de Sidecar-engine.",
@@ -3590,10 +3779,14 @@
     "title": "STAC-catalogi",
     "footprintLayerName": "STAC-zoekcontouren",
     "catalogSearch": "Een openbare catalogus zoeken in STAC Index",
+    "portolanCatalogSearch": "Een openbare catalogus zoeken in Portolan Registry",
     "catalogSearchPlaceholder": "Catalogusnamen zoeken…",
     "indexLoading": "STAC Index wordt geladen…",
+    "portolanIndexLoading": "Portolan Registry wordt geladen…",
     "indexUnavailable": "STAC Index niet beschikbaar: voer een URL in",
+    "portolanIndexUnavailable": "Portolan Registry niet beschikbaar: voer een URL in",
     "indexLoadFailed": "Kan STAC Index niet laden",
+    "portolanIndexLoadFailed": "Kan Portolan Registry niet laden",
     "urlLabel": "URL van STAC-catalogus of API",
     "connect": "Verbinden",
     "connecting": "Verbinding maken met STAC…",
@@ -4506,6 +4699,10 @@
       "errorStartSidecar": "Kon de GeoLibre-sidecar niet starten.",
       "errorStopSidecar": "Kon de GeoLibre-sidecar niet stoppen.",
       "noToolsFound": "Geen gereedschappen gevonden.",
+      "searchToolsByMeaning": "Hulpmiddelen zoeken of een taak beschrijven",
+      "searchingByMeaning": "Catalogus doorzoeken op betekenis",
+      "bestMatches": "Beste overeenkomsten",
+      "otherMatches": "Overige overeenkomsten",
       "noParameters": "Dit gereedschap heeft geen parameters.",
       "noOutput": "Nog geen uitvoer.",
       "enabled": "Ingeschakeld",
@@ -4580,6 +4777,10 @@
                 "inside": "Binnen (verkleinen)",
                 "both": "Beide zijden"
               }
+            },
+            "dissolve": {
+              "label": "Resultaat samenvoegen",
+              "description": "Voeg de buffers samen tot één object en los de overlappingen daartussen op. De samengevoegde vorm hoort bij geen enkel invoerobject, dus attributen vervallen; om op een attribuut samen te voegen, voer je het gereedschap Samenvoegen uit op het resultaat."
             }
           }
         },
@@ -6395,6 +6596,7 @@
     "description": "Sla herbruikbare stijlen, symbolen, labelvoorinstellingen en kleurverlopen op, blader erdoorheen en pas ze toe op lagen en projecten.",
     "searchPlaceholder": "Stijlen en tags zoeken…",
     "presetsSection": "Ingebouwde voorinstellingen",
+    "presetActions": "Voorinstellingsacties",
     "librarySection": "Mijn bibliotheek",
     "projectSection": "Dit project",
     "empty": "Geen opgeslagen stijlen komen overeen. Sla de stijl van een laag op of importeer een bibliotheek om te beginnen.",
@@ -6762,6 +6964,7 @@
     "footerDeck": "Wijzigingen worden direct toegepast op de deck.gl-laagstijl van DuckDB.",
     "footerMaplibre": "Wijzigingen worden direct toegepast op de paint-eigenschappen van MapLibre.",
     "pluginPaintedFooter": "Deze laag wordt getekend door de bijbehorende plugin, die eigen stijlopties biedt.",
+    "serviceStyledFooter": "Deze laag behoudt de eigen opmaak van de service; dekking, volgorde, zoombereik en filters blijven van toepassing.",
     "extrusion": {
       "color": "Extrusiekleur",
       "opacity": "Extrusiedekking",
@@ -6957,6 +7160,11 @@
       "invalidExpression": "Ongeldige expressie",
       "openBuilder": "Expressie-editor openen",
       "showFeatureId": "De rij met de object-id tonen",
+      "maxWidth": "Breedte van de pop-up (px)",
+      "maxWidthPlaceholder": "Standaard",
+      "imageHeight": "Hoogte van de afbeelding (px)",
+      "imageHeightPlaceholder": "Standaard",
+      "sizeHint": "Laat een van beide leeg voor de standaardwaarde. Een afbeelding behoudt haar verhouding, dus pas een bredere pop-up laat een foto de extra hoogte gebruiken.",
       "fields": "Velden",
       "allFields": "Geen velden gekozen, dus alle zichtbare velden worden getoond, in de volgorde van de gegevens zelf.",
       "addField": "Een veld toevoegen…",
@@ -7018,6 +7226,7 @@
     "allFieldsUsed": "Elk veld heeft al een filter",
     "removeAll": "Alles verwijderen",
     "clearAll": "Filters wissen",
+    "clearAllWithExpression": "Filters en opgeslagen expressie wissen",
     "clearOne": "Dit filter wissen",
     "clearOneNamed": "Het filter op {{field}} wissen",
     "remove": "Filter verwijderen",
@@ -7151,6 +7360,9 @@
     "saveEditsSuccess": "{{count}} object(en) opgeslagen naar het bronbestand.",
     "saveEditsNoFeatures": "Deze laag heeft geen objecten om op te slaan.",
     "saveEditsError": "Bewerkingen konden niet worden opgeslagen naar het bronbestand.",
+    "pendingTableDraftsBlocked": "De attributentabel bevat niet-opgeslagen bewerkingen die niet kunnen worden toegepast. Corrigeer of annuleer ze en probeer het opnieuw.",
+    "saveEditsToArcgis": "Bewerkingen opslaan naar ArcGIS-service",
+    "saveEditsArcgisSuccess": "Opgeslagen naar ArcGIS: {{inserted}} ingevoegd, {{updated}} bijgewerkt, {{deleted}} verwijderd.",
     "saveEditsToPostgis": "Bewerkingen opslaan naar PostGIS-tabel",
     "saveEditsPostgisSuccess": "Opgeslagen naar {{table}}: {{inserted}} ingevoegd, {{updated}} bijgewerkt, {{deleted}} verwijderd.",
     "saveEditsPostgisSkippedFields": "Velden zonder overeenkomende tabelkolom zijn niet opgeslagen: {{fields}}.",
@@ -7193,6 +7405,8 @@
     "renameGroup": "Groep hernoemen",
     "moveGroupUp": "Groep omhoog verplaatsen",
     "moveGroupDown": "Groep omlaag verplaatsen",
+    "sortGroupAscending": "Sorteren van A tot Z",
+    "sortGroupDescending": "Sorteren van Z tot A",
     "ungroupKeepLayers": "Groep opheffen (lagen behouden)",
     "deleteGroupAndLayers": "Groep en lagen verwijderen",
     "groupActions": "Groepsacties",
@@ -7308,7 +7522,20 @@
     "stretchLinear": "Lineair",
     "stretchLog": "Logaritmisch",
     "stretchSqrt": "Vierkantswortel",
+    "viewportStretch": "Weergaverek",
+    "viewportMinMax": "Min. / max. van weergave",
+    "viewportPercentile": "5–95-percentiel van weergave",
+    "viewportStddev": "Gemiddelde ± 2 standaarddeviaties van weergave",
+    "viewportApply": "Toepassen op weergave",
+    "viewportStretching": "Weergave lezen…",
+    "viewportStretchApplied": "Weergaverek toegepast",
+    "viewportAuto": "Automatisch bijwerken wanneer de kaart beweegt",
+    "viewportStretchNoView": "De kaartweergave is niet beschikbaar.",
+    "viewportStretchNoValues": "Geen rasterwaarden gevonden in de weergave.",
+    "viewportStretchNoRange": "De waarden in de weergave vormen geen bereik.",
+    "viewportStretchMoved": "De kaart is verplaatst voordat het lezen klaar was. Pas opnieuw toe.",
     "index": "Index",
+    "opacityClasses": "Dekkingsklassen",
     "classifyToggle": "Indelen in discrete klassen",
     "method": "Methode",
     "methodEqualInterval": "Gelijk interval",
@@ -7870,5 +8097,77 @@
     "catalogHuc12pp": "HUC12-uitstroompunten",
     "catalogNmwdiSt": "Waterlocaties in New Mexico",
     "catalogFlowlines": "NHDPlus-stroomlijnen"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "Gebruik een 3D Tiles-URL voor tileset.json in deze ArcGIS-weergave. Google Photorealistic- en I3S-tegels vereisen een andere renderer.",
+      "globeGoogleKeyRequired": "Google Photorealistic 3D Tiles hebben een Google Maps API-sleutel in Instellingen nodig om op de globe te laden."
+    },
+    "geolibre-osm-downloader": {
+      "title": "OSM-downloader",
+      "hint": "Download OpenStreetMap-objecten van het huidige kaartgebied via de publieke Overpass API.",
+      "attribution": "Data © OpenStreetMap-bijdragers, beschikbaar onder de ODbL.",
+      "featureType": "Type object",
+      "presetBuildings": "Gebouwen",
+      "presetRoads": "Wegen",
+      "presetAmenities": "Voorzieningen",
+      "presetWaterways": "Waterwegen",
+      "presetLanduse": "Grondgebruik",
+      "presetCustom": "Aangepaste tag",
+      "presetAll": "Alle getagde objecten",
+      "tagKey": "Tag-sleutel",
+      "tagValue": "Tag-waarde",
+      "tagKeyPlaceholder": "bijv. shop",
+      "tagValuePlaceholder": "optioneel, bijv. bakkerij",
+      "west": "West",
+      "south": "Zuid",
+      "east": "Oost",
+      "north": "Noord",
+      "useMapExtent": "Gebruik kaartbereik",
+      "download": "Download OSM-data",
+      "ready": "Kies een gebied en een type object.",
+      "exportGeoJson": "Opslaan als GeoJSON",
+      "mapUnavailable": "Het kaartbereik is nog niet beschikbaar.",
+      "extentApplied": "Kaartbereik toegepast.",
+      "downloading": "Downloaden van OpenStreetMap…",
+      "noFeatures": "Geen overeenkomende objecten gevonden in dit gebied.",
+      "error": "OSM-data kon niet worden gedownload: {{message}}",
+      "added": "{{count}} objecten toegevoegd aan de kaart."
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "Doorzoek de IGN LiDAR HD-tegeldekking voor het huidige kaartgebied, voeg tegels als puntenwolken aan de kaart toe, of download hun COPC LAZ-bestanden van de servers van IGN.",
+      "attribution": "Data © IGN — LiDAR HD, gepubliceerd onder de Licence Ouverte 2.0.",
+      "west": "West",
+      "south": "Zuid",
+      "east": "Oost",
+      "north": "Noord",
+      "useMapExtent": "Gebruik kaartbereik",
+      "search": "Tegels zoeken",
+      "addToMap": "Toevoegen aan kaart",
+      "download": "Downloaden",
+      "ready": "Kies een gebied en zoek naar LiDAR HD-tegels.",
+      "mapUnavailable": "Het kaartbereik is nog niet beschikbaar.",
+      "extentApplied": "Kaartbereik toegepast.",
+      "searching": "IGN LiDAR HD-tegels worden gezocht…",
+      "noTiles": "Er zijn geen LiDAR HD-tegels gevonden in dit gebied.",
+      "noDownload": "geen puntenwolk gepubliceerd",
+      "layerName": "IGN LiDAR HD-tegels",
+      "found": "{{count}} tegel(s) gevonden.",
+      "foundTruncated": "De eerste {{count}} van {{matched}} tegels worden getoond. Verklein het zoekgebied om de rest te zien.",
+      "addedToMap": "{{name}} toegevoegd aan de kaart.",
+      "alreadyOnMap": "{{name}} staat al op de kaart.",
+      "unsupportedRenderer": "Puntenwolken vereisen de MapLibre- of Mapbox-renderer.",
+      "addError": "Kon {{name}} niet aan de kaart toevoegen: {{message}}",
+      "error": "Kon niet zoeken naar IGN LiDAR HD-tegels: {{message}}",
+      "selectAll": "Alles selecteren",
+      "selectTile": "{{name}} selecteren",
+      "addSelectedToMap": "Selectie toevoegen aan kaart",
+      "addSelectedToMapCount": "{{count}} geselecteerde toevoegen aan kaart",
+      "addingSelected": "{{count}} tegel(s) worden aan de kaart toegevoegd…",
+      "addedSelectedCount": "{{count}} tegel(s) toegevoegd aan de kaart.",
+      "alreadyOnMapCountPlural": "{{count}} tegel(s) stonden al op de kaart.",
+      "addSelectedFailedCount": "{{count}} tegel(s) konden niet worden toegevoegd."
+    }
   }
 }

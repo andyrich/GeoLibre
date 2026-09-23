@@ -40,6 +40,7 @@ import {
   earthLengthToBody,
   encodePolyline,
   getActiveBodyRadiusRatio,
+  horizontalBbox,
   layerJoinKey,
   type GeoLibreLayer,
 } from "@geolibre/core";
@@ -211,6 +212,44 @@ type BufferUnits = "kilometers" | "meters" | "miles";
 const BUFFER_UNITS = new Set<BufferUnits>(["kilometers", "meters", "miles"]);
 
 /**
+ * Values both engines read as a boolean parameter, matched case-insensitively
+ * after trimming. Plain truthiness cannot be shared: `Boolean([])` is `true`
+ * while Python's `bool([])` is `False`, and a checkbox that reached the tool as
+ * the *string* `"false"` (a query string, a CSV batch row, a replayed history
+ * entry) is truthy in both languages, which is the opposite of what the caller
+ * meant. Spelling the accepted words out keeps the two engines on one reading
+ * and turns a typo into an error instead of a silent dissolve.
+ */
+const TRUE_STRINGS = new Set(["true", "1", "yes", "on"]);
+
+const FALSE_STRINGS = new Set(["", "false", "0", "no", "off"]);
+
+/**
+ * Read a checkbox parameter the way `vector_ops._boolean_param` does.
+ *
+ * An absent or null value is the unchecked default; a JSON boolean passes
+ * through; a finite number is its zero/non-zero truthiness; a string must be
+ * one of {@link TRUE_STRINGS}/{@link FALSE_STRINGS}. Anything else (an array,
+ * an object, NaN) returns `null` so the caller can reject it rather than pick a
+ * coercion the other engine does not share.
+ *
+ * @param raw - The raw parameter value as it arrived from the caller.
+ * @returns The boolean, or `null` when the value is not a boolean at all.
+ */
+export function booleanParam(raw: unknown): boolean | null {
+  if (raw == null) return false;
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw !== 0 : null;
+  if (typeof raw === "string") {
+    const text = raw.trim().toLowerCase();
+    if (TRUE_STRINGS.has(text)) return true;
+    if (FALSE_STRINGS.has(text)) return false;
+    return null;
+  }
+  return null;
+}
+
+/**
  * Python's decimal-float grammar, which `Number()` does not share.
  *
  * `Number()` reads JavaScript's `0x`/`0b`/`0o` bases (`Number("0x10")` is 16)
@@ -291,6 +330,28 @@ function bufferOneFeature(
   return kept ? { ...kept, properties: feature.properties ?? {} } : null;
 }
 
+/**
+ * Merge every buffered feature into one, dissolving the overlaps between them.
+ *
+ * The merged ring belongs to no single input feature, so the result carries no
+ * attributes — the same shape the GeoPandas engine's `union_all` produces. Only
+ * `null` when the union collapses to nothing; a throw from polyclip is left to
+ * the caller, which reports it the way the Python engine's raise does.
+ *
+ * @param features - The buffered polygons, at least one.
+ * @returns The single merged feature, or `null` when nothing is left.
+ */
+function dissolveBuffers(features: Feature[]): Feature | null {
+  const polys = features as Feature<Polygon | MultiPolygon>[];
+  // turf's union throws on a single geometry ("Must have at least 2
+  // geometries"), and one buffer is already its own dissolve.
+  const merged = polys.length === 1 ? polys[0] : union(featureCollection(polys));
+  const kept = nonEmptyBuffer(merged as Feature | null);
+  // The single `properties: {}` — the lone-buffer branch carries the source
+  // feature's attributes in, so clearing them has to happen here either way.
+  return kept ? { ...kept, properties: {} } : null;
+}
+
 export const bufferTool: ProcessingAlgorithm = {
   id: "buffer",
   name: "Buffer",
@@ -332,6 +393,14 @@ export const bufferTool: ProcessingAlgorithm = {
         { value: "both", label: "Both sides" },
       ],
     },
+    {
+      id: "dissolve",
+      label: "Dissolve result",
+      type: "boolean",
+      default: false,
+      description:
+        "Merge the buffers into one feature and dissolve the overlaps between them. The merged shape belongs to no input feature, so attributes are dropped; to dissolve by an attribute, run the Dissolve tool on the result.",
+    },
   ],
   run: (ctx) => {
     const fc = requireFeatures(ctx);
@@ -360,6 +429,13 @@ export const bufferTool: ProcessingAlgorithm = {
       // Reject rather than fall back, so the client and Python engines answer a
       // bad `side` the same way (see tests/fixtures/vector/SPEC.md).
       ctx.log(`Error: unknown buffer side '${side}'; expected ${[...BUFFER_SIDES].join(", ")}`);
+      return;
+    }
+    // Checked before the distance, so a call with a bad dissolve flag and a bad
+    // distance reports the same first error from both engines.
+    const dissolveResult = booleanParam(ctx.parameters.dissolve);
+    if (dissolveResult === null) {
+      ctx.log("Error: buffer dissolve must be true or false");
       return;
     }
     const rawDistance = ctx.parameters.distance;
@@ -427,6 +503,27 @@ export const bufferTool: ProcessingAlgorithm = {
       if (buffered) features.push(buffered);
       else dropped += 1;
     }
+    // Dissolve before logging anything: the Python engine returns its messages
+    // only on success, so a failed dissolve must not leave a "Buffered N" line
+    // behind on the client either.
+    let output = featureCollection(features);
+    const didDissolve = dissolveResult && features.length > 0;
+    if (didDissolve) {
+      let merged: Feature | null = null;
+      try {
+        merged = dissolveBuffers(features);
+      } catch {
+        // polyclip can throw on a self-intersecting union, the way the
+        // GeoPandas engine's `union_all` can — fail the run rather than hand
+        // back the undissolved buffers the caller did not ask for.
+        merged = null;
+      }
+      if (!merged) {
+        ctx.log("Error: unable to dissolve the buffered features");
+        return;
+      }
+      output = featureCollection([merged]);
+    }
     ctx.log(`Buffered ${features.length} feature(s) by ${distance} ${units} (${side})`);
     if (dropped > 0) {
       // Deliberately not "the inward buffer": an outward buffer also drops a
@@ -436,7 +533,10 @@ export const bufferTool: ProcessingAlgorithm = {
     if (failed > 0) {
       ctx.log(`Skipped ${failed} feature(s) the buffer could not process`);
     }
-    ctx.addResultLayer?.("Buffer", featureCollection(features));
+    if (didDissolve) {
+      ctx.log(`Dissolved ${features.length} buffer(s) into 1 feature`);
+    }
+    ctx.addResultLayer?.("Buffer", output);
   },
 };
 
@@ -2310,7 +2410,12 @@ export const gridTool: ProcessingAlgorithm = {
         ctx.log('Error: parameter "layer" has no GeoJSON features');
         return;
       }
-      bounds = bbox(layer.geojson) as [number, number, number, number];
+      const layerBounds = horizontalBbox(bbox(layer.geojson));
+      if (!layerBounds) {
+        ctx.log('Error: parameter "layer" has no usable extent');
+        return;
+      }
+      bounds = layerBounds;
       // Guard the layer path like the viewport/bbox paths: a zero-area extent
       // (e.g. a single-point layer, west === east) or an antimeridian-spanning
       // one (west > east) would otherwise make cols/rows zero or negative,
@@ -2457,13 +2562,14 @@ export const voronoiTool: ProcessingAlgorithm = {
     // Both diagrams are undefined for collinear/coincident points (a zero-area
     // bounding box). Turf's tin/voronoi would throw or return nothing; bail with
     // a clear message instead. Mirrors the backend guard.
-    const [minX, minY, maxX, maxY] = bbox(pointsFc) as [number, number, number, number];
-    if (minX === maxX || minY === maxY) {
+    const pointsBox = horizontalBbox(bbox(pointsFc));
+    if (!pointsBox || pointsBox[0] === pointsBox[2] || pointsBox[1] === pointsBox[3]) {
       ctx.log(
         "Error: the points are collinear or coincident; Voronoi / Delaunay needs points that span an area",
       );
       return;
     }
+    const [minX, minY, maxX, maxY] = pointsBox;
     if (kind === "delaunay") {
       const result = tin(pointsFc);
       // The bbox guard above catches axis-aligned collinearity; diagonally

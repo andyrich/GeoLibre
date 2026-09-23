@@ -22,6 +22,7 @@
     "noMatches": "ไม่พบรายการที่ตรงกัน",
     "addFailed": "ไม่สามารถเพิ่มแหล่งข้อมูลนี้ได้",
     "builtinBadge": "ในตัว",
+    "configBadge": "คอนฟิก",
     "newConnection": "การเชื่อมต่อ {{kind}} ใหม่",
     "loadingTables": "กำลังโหลดตาราง…",
     "files": "ไฟล์",
@@ -345,6 +346,22 @@
       "polyline": {
         "label": "เพิ่มเลเยอร์โพลีไลน์ที่เข้ารหัส",
         "description": "นำเข้าสตริงโพลีไลน์ที่เข้ารหัส (Google, OSRM, Valhalla) จากข้อความหรือไฟล์เป็นเส้นเวกเตอร์"
+      },
+      "cesiumIon": {
+        "label": "เพิ่มแอสเซ็ต Cesium Ion",
+        "description": "เพิ่มไทล์เซ็ต 3D Tiles หรือภาพถ่ายจาก Cesium Ion ด้วย id ของแอสเซ็ต แสดงผลบนลูกโลก 3 มิติด้วยโทเค็น Cesium Ion ของคุณ"
+      },
+      "czml": {
+        "label": "เพิ่มเลเยอร์ 3 มิติไดนามิก CZML",
+        "description": "โหลดเอกสาร Cesium Language (CZML) แบบไดนามิกที่อธิบายวงโคจร วิถี เส้นทางยานพาหนะ และฉาก 3 มิติที่เปลี่ยนตามเวลาบนลูกโลก"
+      },
+      "kml": {
+        "label": "KML / KMZ",
+        "description": "โหลด KML หรือ KMZ บนลูกโลกโดยคงรูปแบบต้นฉบับ ภาพซ้อนทับ และลิงก์เครือข่าย"
+      },
+      "wcs": {
+        "description": "โหลดข้อมูลตัวเลข GeoTIFF บางส่วนจากบริการ WCS 1.0.0",
+        "label": "เลเยอร์ WCS"
       }
     },
     "shared": {
@@ -384,6 +401,7 @@
       "loadAria": "โหลดบริการที่บันทึกไว้",
       "loadPlaceholder": "โหลดบริการที่บันทึกไว้…",
       "builtin": "{{name}} (ในตัว)",
+      "config": "{{name}} (คอนฟิก)",
       "deleteAria": "ลบบริการที่บันทึกไว้",
       "empty": "ยังไม่มีบริการที่บันทึกไว้ — กรอกแบบฟอร์มแล้วเลือก “บันทึกรายการปัจจุบัน”",
       "name": "ชื่อ",
@@ -399,6 +417,41 @@
       "errorRead": "ไม่สามารถอ่านไฟล์นั้นเป็นคลังบริการได้",
       "imported_other": "นำเข้าบริการแล้ว {{count}} รายการ",
       "importedWithDropped_other": "นำเข้าบริการแล้ว {{count}} รายการ (ข้าม {{dropped}} รายการ — คลังเต็ม)"
+    },
+    "cesiumIon": {
+      "defaultName": "แอสเซ็ต Cesium Ion",
+      "assetId": "ID ของแอสเซ็ต",
+      "kindTileset": "3D Tiles",
+      "kindImagery": "ภาพถ่าย",
+      "altitudeOffset": "ค่าชดเชยความสูง (ม.)",
+      "quickPicks": "ตัวเลือกด่วน",
+      "quickPicksPlaceholder": "เลือกแอสเซ็ต…",
+      "quickPicksGlobal": "มีในทุกบัญชี ion",
+      "quickPicksDepot": "ตัวอย่างจาก Asset Depot",
+      "hint": "ดู id ของแอสเซ็ตได้ที่ My Assets บน ion.cesium.com แอสเซ็ตต้องถูกแชร์กับโทเค็นที่ตั้งค่าไว้ในการตั้งค่า",
+      "depotHint": "ตัวอย่างจาก Asset Depot จะสตรีมได้ก็ต่อเมื่อเพิ่มลงในบัญชีของคุณที่ ion.cesium.com → Asset Depot แล้ว",
+      "errorAssetId": "ป้อน id ของแอสเซ็ต Cesium Ion (จำนวนเต็มบวก)",
+      "errorAltitude": "ป้อนค่าชดเชยความสูงเป็นตัวเลขหน่วยเมตร",
+      "tokenMissing": "ยังไม่ได้ตั้งค่าโทเค็น Cesium Ion โปรดเพิ่มในการตั้งค่า → ตัวแปรสภาพแวดล้อม (VITE_CESIUM_TOKEN) มิฉะนั้นจะโหลดแอสเซ็ตไม่สำเร็จ"
+    },
+    "czml": {
+      "defaultName": "ฉากไดนามิก CZML",
+      "url": "URL ของ CZML",
+      "sourceModeUrl": "URL",
+      "sourceModeFile": "ไฟล์ในเครื่อง",
+      "file": "ไฟล์",
+      "quickPicks": "ฉากไดนามิกตัวอย่าง",
+      "hint": "สตรีมหรือไฟล์ CZML กำหนดตำแหน่ง 3 มิติแบบไดนามิก แอนิเมชัน และวงโคจรที่ซิงก์กับนาฬิกาของลูกโลก",
+      "errorUrl": "ป้อน URL ของเอนด์พอยต์ CZML ที่ถูกต้อง",
+      "errorChooseFile": "เลือกไฟล์ CZML (.czml หรือ .json) ที่จะโหลด",
+      "errorFileMissing": "ไม่สามารถอ่านไฟล์ที่เลือกได้",
+      "errorInvalidCzml": "ไฟล์ไม่มีเอกสาร CZML ที่ถูกต้อง (ต้องเป็นอาร์เรย์ JSON หรือออบเจ็กต์แพ็กเก็ต)",
+      "readError": "อ่านข้อมูล CZML ไม่สำเร็จ"
+    },
+    "kml": {
+      "defaultName": "KML / KMZ",
+      "url": "URL ของ KML / KMZ",
+      "errorSource": "ป้อน URL ของ KML/KMZ หรือเลือกไฟล์"
     },
     "xyz": {
       "defaultName": "เลเยอร์ XYZ",
@@ -459,6 +512,7 @@
       "retrievedTypes": "ชนิดฟีเจอร์ที่ดึงมาได้",
       "selectType_other": "เลือกจากชนิดฟีเจอร์ทั้งหมด {{count}} ชนิด",
       "noTypesFound": "ไม่พบชนิดฟีเจอร์สำหรับบริการนี้",
+      "errorNoFeatures": "ชนิดฟีเจอร์นี้ไม่ส่งคืนฟีเจอร์ใด ๆ",
       "retrieveError": "ไม่สามารถดึงชนิดฟีเจอร์จากบริการนี้ได้"
     },
     "wmts": {
@@ -891,9 +945,53 @@
       "cellSize": "ขนาดเซลล์",
       "lineWidth": "ความหนาเส้น",
       "extrusion": "การยกตัวแบบ 3 มิติ",
-      "modelUrlPlaceholder": "https://example.com/model.glb"
+      "modelUrlPlaceholder": "https://example.com/model.glb",
+      "chooseModelFile": "เลือกโมเดลในเครื่อง",
+      "sampleDataset": "ชุดข้อมูลตัวอย่าง",
+      "sampleCustom": "โมเดลกำหนดเอง",
+      "sampleAirplane": "เครื่องบิน — ซานฟรานซิสโก",
+      "sampleShanghai": "เซี่ยงไฮ้ — ใจกลางเมือง",
+      "modelFileHint": "เลือกไฟล์ GLB หรือไฟล์ glTF แบบครบในตัว โมเดลในเครื่องจะถูกฝังในโปรเจกต์ที่บันทึก ทำให้ขนาดโปรเจกต์ใหญ่ขึ้น",
+      "modelExternalResources": "โมเดลนี้อ้างอิงไฟล์แยกต่างหาก โปรดส่งออกเป็น GLB ที่ฝังพื้นผิวและบัฟเฟอร์ไว้ในตัว แล้วลองอีกครั้ง",
+      "modelTooLarge": "โมเดลนี้มีขนาดเกินขีดจำกัด {{limit}} MB สำหรับการฝังในโปรเจกต์ โปรดโฮสต์ไฟล์แล้วเพิ่มผ่าน URL แทน",
+      "modelFileError": "ไม่สามารถอ่านโมเดลนี้ได้ โปรดเลือกไฟล์ glTF 2.0 หรือ GLB ที่ถูกต้อง"
     },
-    "nonGeographicCoordinates": "พิกัดใน {{names}} ไม่ใช่ลองจิจูด/ละติจูด จึงจะไม่มีสิ่งใดถูกวาดบนแผนที่ ระบบพิกัดระบุไว้ผิด — โปรดฉายพิกัดข้อมูลใหม่ (หรือแก้ไฟล์ .prj) แล้วโหลดอีกครั้ง"
+    "nonGeographicCoordinates": "พิกัดใน {{names}} ไม่ใช่ลองจิจูด/ละติจูด จึงจะไม่มีสิ่งใดถูกวาดบนแผนที่ ระบบพิกัดระบุไว้ผิด — โปรดฉายพิกัดข้อมูลใหม่ (หรือแก้ไฟล์ .prj) แล้วโหลดอีกครั้ง",
+    "pmtiles": {
+      "errorUrl": "โปรดป้อน URL ของ PMTiles แบบ HTTP หรือ HTTPS ที่ถูกต้อง",
+      "errorMlt": "ArcGIS ต้องใช้ไทล์เวกเตอร์ MVT ไม่ใช่ MLT"
+    },
+    "lidar": {
+      "errorUrl": "โปรดป้อน URL ของ LiDAR แบบ HTTP หรือ HTTPS ที่ถูกต้อง"
+    },
+    "zarr": {
+      "errorUrl": "โปรดป้อน URL ของ Zarr แบบ HTTP หรือ HTTPS ที่ถูกต้อง",
+      "errorColorLimits": "ค่าสีสูงสุดต้องมากกว่าค่าสีต่ำสุด"
+    },
+    "raster": {
+      "errorSource": "ป้อน URL ของ GeoTIFF หรือเลือกไฟล์"
+    },
+    "wcs": {
+      "coverage": "คัฟเวอเรจ",
+      "retrieve": "ดึงข้อมูลคัฟเวอเรจ",
+      "select": "เลือกคัฟเวอเรจ",
+      "extent": "ใช้ขอบเขตคัฟเวอเรจ",
+      "width": "ความกว้าง (พิกเซล)",
+      "height": "ความสูง (พิกเซล)",
+      "hint": "ดาวน์โหลด GeoTIFF ใน EPSG:4326 ตามขนาดพิกเซลที่เลือก ค่าอาจถูกสุ่มตัวอย่างใหม่ บันทึกแรสเตอร์เพื่อเก็บข้อมูลที่ดาวน์โหลด",
+      "errors": {
+        "xml": "บริการส่งคืน XML ที่ไม่ถูกต้อง",
+        "version": "แหล่งข้อมูลนี้ต้องใช้ WCS 1.0.0 บริการส่งคืนการตอบกลับที่ไม่รองรับ",
+        "empty": "ไม่มีคัฟเวอเรจที่ตรงกัน",
+        "format": "คัฟเวอเรจไม่ได้ประกาศรองรับเอาต์พุต GeoTIFF",
+        "crs": "คัฟเวอเรจต้องรองรับ EPSG:4326 สำหรับทั้งคำขอและเอาต์พุต",
+        "size": "เลือกขนาดตั้งแต่ 1 ถึง 4096 พิกเซล จำกัดการดาวน์โหลดที่ 128 MB",
+        "metadata": "บริการส่งคืนเมทาดาทามากเกินกว่าที่ GeoLibre จะโหลดได้ จำกัดการตอบกลับเมทาดาทาที่ 32 MB",
+        "response": "บริการไม่ได้ส่งคืน GeoTIFF ที่ถูกต้อง",
+        "bounds": "ป้อนกรอบที่ถูกต้อง: ตะวันตก/ตะวันออกอยู่ในช่วง -180 ถึง 180 ใต้/เหนืออยู่ในช่วง -90 ถึง 90 โดยตะวันตก < ตะวันออก และใต้ < เหนือ",
+        "url": "ป้อน URL ของบริการ WCS"
+      }
+    }
   },
   "offline": {
     "title": "ดาวน์โหลดพื้นที่แบบออฟไลน์",
@@ -1318,6 +1416,11 @@
     "errorFallback": "ไม่สามารถแชร์โปรเจกต์ได้",
     "usernameRequired": "กรุณาตั้งชื่อผู้ใช้ในบัญชี {{shareHost}} ของคุณก่อนแชร์ เปิดการตั้งค่าบัญชีเพื่อเลือกชื่อผู้ใช้แล้วลองใหม่",
     "openAccountSettings": "เปิดการตั้งค่าบัญชี",
+    "shareAnyway": "แชร์ต่อไป",
+    "localWarningTitle_other": "แผนที่ที่แชร์จะขาดเลเยอร์ {{count}} รายการ",
+    "localWarningBody": "{{shareHost}} จัดเก็บเฉพาะไฟล์โปรเจกต์เท่านั้น ไม่เก็บไฟล์ในคอมพิวเตอร์ของคุณ ผู้รับจะเปิดโปรเจกต์ในเบราว์เซอร์ซึ่งอ่านดิสก์ของคุณไม่ได้ ดังนั้นเลเยอร์เหล่านี้จะว่างเปล่าสำหรับทุกคนยกเว้นคุณ",
+    "localWarningAdvice": "หากต้องการรวมเลเยอร์เหล่านี้ ให้แปลงแรสเตอร์เป็น Cloud Optimized GeoTIFF และเวกเตอร์เป็น PMTiles หรือ GeoParquet โฮสต์ไฟล์บนเซิร์ฟเวอร์ HTTPS สาธารณะ เช่น GitHub หรือ Hugging Face เพิ่มลงแผนที่ผ่าน URL แล้วแชร์อีกครั้ง เลเยอร์เวกเตอร์ในเครื่องขนาดเล็กจะถูกฝังในโปรเจกต์โดยอัตโนมัติ",
+    "localWarningLearnMore": "เรียนรู้เพิ่มเติม",
     "readinessChecking": "กำลังตรวจสอบว่าผู้รับจะโหลดข้อมูลของคุณได้หรือไม่…",
     "readinessUnavailable": "ไม่สามารถเรียกใช้การตรวจสอบแหล่งข้อมูลได้",
     "readinessAllReachable_other": "แหล่งข้อมูลทั้ง {{count}} รายการดูเหมือนว่าผู้รับจะเข้าถึงได้",
@@ -1395,7 +1498,7 @@
   },
   "printLayout": {
     "title": "เลย์เอาต์สำหรับพิมพ์",
-    "description": "จัดองค์ประกอบแผนที่พร้อมพิมพ์ ด้วยชื่อเรื่อง คำอธิบายสัญลักษณ์ มาตราส่วน และลูกศรทิศเหนือ แล้วส่งออกเป็น PNG หรือ PDF",
+    "description": "จัดองค์ประกอบแผนที่พร้อมพิมพ์ ด้วยชื่อเรื่อง คำอธิบายสัญลักษณ์ มาตราส่วน และลูกศรทิศเหนือ แล้วส่งออกเป็น PNG, PDF หรือ SVG",
     "preview": "ตัวอย่าง",
     "resizeControls": "ปรับขนาดแผงควบคุม",
     "resizeDialog": "ปรับขนาดกล่องโต้ตอบ",
@@ -1403,6 +1506,7 @@
     "copyToClipboard": "คัดลอกไปยังคลิปบอร์ด",
     "copied": "คัดลอกแล้ว",
     "exportPng": "ส่งออก PNG",
+    "exportSvg": "ส่งออก SVG",
     "exportPdf": "ส่งออก PDF",
     "titleLabel": "ชื่อเรื่อง",
     "titlePlaceholder": "ชื่อแผนที่",
@@ -1819,24 +1923,35 @@
     "noLayers": "ยังไม่มีเลเยอร์",
     "labelPlaceholder": "ป้ายกำกับ",
     "labelLabel": "ป้ายกำกับสำหรับแผนที่ {{number}}",
+    "renderingEngineLabel": "เอนจินการแสดงผลสำหรับแผนที่ {{number}}",
     "removePane": "นำแผนที่ {{number}} ออก",
     "show3d": "แสดงแผนที่ {{number}} เป็นลูกโลก 3 มิติ",
     "show2d": "แสดงแผนที่ {{number}} เป็นแผนที่ 2 มิติ",
     "only2d": "2 มิติเท่านั้น",
-    "cesiumTokenHint": "เพิ่มโทเค็น Cesium Ion ในการตั้งค่าเพื่อใช้ข้อมูลภูมิประเทศและภาพถ่ายจาก Ion"
+    "only3d": "3 มิติเท่านั้น",
+    "noMapbox": "ไม่รองรับ Mapbox",
+    "noArcgis": "ไม่รองรับ ArcGIS",
+    "cesiumTokenHint": "เพิ่มโทเค็น Cesium Ion ใน<settingsLink>การตั้งค่า → ตัวแปรสภาพแวดล้อม</settingsLink> เพื่อใช้ข้อมูลภูมิประเทศและภาพถ่ายจาก Ion"
   },
   "renderer": {
     "basemap": "แผนที่ฐาน",
     "imagery": "ภาพถ่าย",
     "projectBasemap": "แผนที่ฐานของโครงการ",
     "layerUnsupported": "ไม่แสดงผลบนลูกโลก 3 มิติ",
+    "layerCesiumOnly": "แสดงผลบนลูกโลก 3 มิติเท่านั้น",
+    "layerMapboxUnsupported": "ไม่แสดงผลบนเอนจิน Mapbox",
+    "layerArcgisUnsupported": "ไม่แสดงผลบนเอนจิน ArcGIS",
+    "layerArcgisViewUnsupported": "ไม่แสดงผลในมุมมอง ArcGIS นี้",
     "resetView": "รีเซ็ตมุมมอง",
     "scene3D": "ลูกโลก 3 มิติ",
     "scene2D": "แผนที่ 2 มิติ",
     "sceneColumbus": "มุมมองโคลัมบัส",
     "fullscreenEnter": "เต็มหน้าจอ",
     "fullscreenExit": "ออกจากเต็มหน้าจอ",
-    "fullscreenUnavailable": "ไม่รองรับเต็มหน้าจอ"
+    "fullscreenUnavailable": "ไม่รองรับเต็มหน้าจอ",
+    "mapboxTokenHint": "เพิ่มโทเค็นการเข้าถึง Mapbox ใน<settingsLink>การตั้งค่า → ตัวแปรสภาพแวดล้อม</settingsLink> เพื่อใช้เอนจินนี้",
+    "arcgisKeyHint": "เพิ่มคีย์ ArcGIS API ใน<settingsLink>การตั้งค่า → ตัวแปรสภาพแวดล้อม</settingsLink> เพื่อใช้สไตล์แผนที่ฐานของ Esri",
+    "pluginUnsupported": "ปลั๊กอินนี้ไม่รองรับเอนจินการเรนเดอร์ที่เลือก"
   },
   "mapContextMenu": {
     "copyCoordinatesHint": "คัดลอกพิกัดไปยังคลิปบอร์ด",
@@ -2099,6 +2214,14 @@
       "cesiumTokenDescription": "ลูกโลก 3 มิติ (บานหน้าต่างในมุมมองแบบแบ่งจอ) ใช้งานได้โดยไม่ต้องมีโทเค็น โดยจะแสดงแผนที่ฐานของโปรเจกต์ ส่วนโทเค็นการเข้าถึงจะเพิ่ม Cesium World Terrain และภาพถ่ายโลกจาก Ion สร้างบัญชีฟรีได้ที่ <tokenLink>ion.cesium.com/tokens</tokenLink> คัดลอกโทเค็นการเข้าถึงเริ่มต้นของคุณ แล้ววางด้านล่าง",
       "cesiumTokenStorageNote": "จัดเก็บไว้ในเครื่องบนอุปกรณ์นี้ (ไม่ได้อยู่ในไฟล์โปรเจกต์ จึงไม่ถูกแชร์ออกไป) และส่งไปยัง Cesium Ion เท่านั้น บนบิลด์เว็บ โทเค็นจะใช้พื้นที่จัดเก็บของเบราว์เซอร์ร่วมกับข้อมูลอื่นของเว็บไซต์",
       "cesiumTokenPlaceholder": "eyJhbGciOi…",
+      "mapboxTokenTitle": "โทเค็น Mapbox",
+      "mapboxTokenPlaceholder": "pk.…",
+      "mapboxTokenDescription": "หากต้องการใช้ Mapbox ให้วางโทเค็นการเข้าถึงจาก<tokenLink>บัญชี Mapbox ของคุณ</tokenLink>ด้านล่าง",
+      "mapboxTokenStorageNote": "จัดเก็บไว้ในเครื่องบนอุปกรณ์นี้ (ไม่ได้อยู่ในไฟล์โปรเจกต์ จึงไม่ถูกแชร์ออกไป) และส่งไปยัง Mapbox เท่านั้น บนบิลด์เว็บ โทเค็นจะใช้พื้นที่จัดเก็บของเบราว์เซอร์ร่วมกับข้อมูลอื่นของเว็บไซต์",
+      "arcgisKeyTitle": "คีย์ ArcGIS API",
+      "arcgisKeyPlaceholder": "AAPT…",
+      "arcgisKeyDescription": "เอนจิน ArcGIS ใช้งานได้โดยไม่ต้องมีคีย์ โดยจะแสดงแผนที่ฐานของโปรเจกต์และเลเยอร์ของคุณผ่าน ArcGIS Maps SDK for JavaScript ที่โหลดจาก CDN ของ Esri คีย์ API จะเพิ่มสไตล์แผนที่ฐานของ Esri (ถนน ภาพถ่าย ภูมิประเทศ ฯลฯ) สร้างคีย์ได้ใน<keyLink>ข้อมูลรับรองสำหรับนักพัฒนา</keyLink>ของบัญชี ArcGIS ของคุณพร้อมสิทธิ์แผนที่ฐาน แล้ววางด้านล่าง",
+      "arcgisKeyStorageNote": "จัดเก็บไว้ในเครื่องบนอุปกรณ์นี้ (ไม่ได้อยู่ในไฟล์โปรเจกต์ จึงไม่ถูกแชร์ออกไป) และส่งไปยัง Esri เท่านั้น บนบิลด์เว็บ คีย์จะใช้พื้นที่จัดเก็บของเบราว์เซอร์ร่วมกับข้อมูลอื่นของเว็บไซต์",
       "variablesTitle": "ตัวแปรสภาพแวดล้อม",
       "variablesCount_other": "ตัวแปรขณะทำงานที่เปิดใช้งาน {{count}} รายการ",
       "secretsWarning": "ค่าต่าง ๆ จะถูกเก็บเป็นข้อความธรรมดาในไฟล์โปรเจกต์ และอาจถูกเปิดเผยเมื่อแชร์โปรเจกต์ ควรหลีกเลี่ยงการใส่ข้อมูลลับไว้ที่นี่ เว้นแต่ไฟล์โปรเจกต์จะเก็บเป็นส่วนตัว",
@@ -2196,6 +2319,56 @@
       }
     }
   },
+  "panel": {
+    "godsEyeView": {
+      "description": "เหตุการณ์บนโลกแบบสดและอิงเวลาจากฟีดข้อมูลสาธารณะ",
+      "globeOnly": "ฟีดโลกแบบสดจะแสดงบนลูกโลก Cesium โปรดสลับไปยังลูกโลก 3 มิติเพื่อดูข้อมูล",
+      "groups": {
+        "movement": "การเคลื่อนไหว",
+        "cameras": "กล้อง",
+        "infrastructure": "โครงสร้างพื้นฐาน",
+        "events": "เหตุการณ์",
+        "utilities": "เครื่องมือ"
+      },
+      "earthquakes": "แผ่นดินไหว",
+      "spaceMissions": "ภารกิจอวกาศ (30 วัน)",
+      "activeFires": "ไฟป่าที่กำลังลุกไหม้ (24 ชม.)",
+      "satellites": "ดาวเทียม",
+      "flights": "เที่ยวบินสด",
+      "militaryFlights": "เที่ยวบินทหาร",
+      "bikeShare": "จักรยานสาธารณะ",
+      "transit": "ระบบขนส่งสาธารณะแบบเรียลไทม์",
+      "streetTraffic": "การจราจรบนถนนจำลอง",
+      "mappedAlpr": "กล้องอ่านป้ายทะเบียนที่ทำแผนที่ไว้",
+      "cctv": "กล้องวงจรปิดสาธารณะ",
+      "cctvPopup": {
+        "liveSnapshot": "ภาพสด",
+        "provider": "ผู้ให้บริการ",
+        "attribution": "การระบุแหล่งที่มา",
+        "privacy": "ความเป็นส่วนตัว"
+      },
+      "radio": "สถานีวิทยุ",
+      "datacenters": "ศูนย์ข้อมูล",
+      "dams": "เขื่อน",
+      "cables": "สายเคเบิลใต้น้ำ",
+      "osmInfrastructure": "โครงสร้างพื้นฐาน OSM",
+      "loading": "กำลังอัปเดต…",
+      "updateFailed": "อัปเดตไม่สำเร็จ",
+      "noneInView": "ไม่พบฟีเจอร์ของเลเยอร์นี้ในมุมมองปัจจุบัน",
+      "never": "ไม่เคย",
+      "lastUpdated": "อัปเดตล่าสุด: {{time}}",
+      "speed": "ความเร็ว",
+      "speedRealTime": "เวลาจริง (1×)",
+      "speedMultiple": "{{factor}}×",
+      "denseSatellites": "แค็ตตาล็อกดาวเทียมแบบหนาแน่น",
+      "denseLoading": "DENSE ···",
+      "denseFailed": "DENSE !",
+      "denseCount": "DENSE · {{count}}",
+      "dense": "DENSE",
+      "denseError": "ไม่สามารถโหลดแค็ตตาล็อก Starlink ได้: {{error}} เลือกเพื่อลองอีกครั้ง",
+      "denseDescription": "แสดงกลุ่มดาวเทียม Starlink ทั้งหมดเป็นจุดแบบน้ำหนักเบา (ไม่มีป้ายกำกับหรือแถวตาราง)"
+    }
+  },
   "toolbar": {
     "menu": {
       "project": "โปรเจกต์",
@@ -2289,6 +2462,7 @@
       "imperial": "นอต / ฟุต",
       "metric": "km/h / เมตร",
       "bankCamera": "เอียงเส้นขอบฟ้าขณะเลี้ยว",
+      "bankCameraMapbox": "Mapbox GL ไม่มีการหมุนกล้องรอบแกนม้วน เส้นขอบฟ้าจึงคงระดับอยู่ที่นี่ เครื่องบินยังคงเอียงและเลี้ยวตามปกติ",
       "invertPitch": "กลับด้านแกนก้มเงย",
       "knots": "kt",
       "kph": "km/h",
@@ -2432,9 +2606,12 @@
       "georss": "เลเยอร์ GeoRSS",
       "video": "เลเยอร์วิดีโอ",
       "deckglViz": "เลเยอร์ Deck.gl",
+      "cesiumIon": "แอสเซ็ต Cesium Ion",
+      "czml": "ฉาก 3 มิติไดนามิก CZML",
       "gltfModel": "โมเดล 3 มิติ (glTF)",
       "postgres": "เลเยอร์ PostgreSQL",
-      "iceberg": "เลเยอร์ Apache Iceberg"
+      "iceberg": "เลเยอร์ Apache Iceberg",
+      "wcs": "เลเยอร์ WCS"
     },
     "conversion": {
       "vectorToVector": "เวกเตอร์เป็นเวกเตอร์",
@@ -2689,6 +2866,8 @@
       "splitViewSync": "ซิงค์มุมมอง",
       "renderingEngine": "เอนจินการแสดงผล",
       "rendererMapLibre": "MapLibre",
+      "rendererMapbox": "Mapbox",
+      "rendererArcgis": "ArcGIS",
       "rendererCesium": "Cesium",
       "viewInGoogleMaps": "ดูใน Google Maps",
       "viewInGoogleEarth": "ดูใน Google Earth",
@@ -2839,6 +3018,7 @@
       "saveProjectAsTitle": "บันทึกโปรเจกต์เป็น",
       "saveProjectAsDesc": "ป้อนชื่อไฟล์ โปรเจกต์จะถูกดาวน์โหลดไปยังโฟลเดอร์ดาวน์โหลดของเบราว์เซอร์เมื่อคุณคลิกบันทึก",
       "embedVectorTitle": "ฝังข้อมูลเวกเตอร์ในเครื่องหรือไม่?",
+      "embedEditedGeometryDesc": "โปรเจกต์นี้มีรูปทรงเรขาคณิตที่แก้ไขแล้ว ฝังข้อมูลเวกเตอร์ (ประมาณ {{size}}) เพื่อเก็บการเปลี่ยนแปลงไว้ หากไม่ฝังข้อมูล ชั้นข้อมูลที่อ้างอิงจะเปิดใหม่ด้วยรูปทรงเดิม และข้อมูลในเครื่องอาจไม่พร้อมใช้งาน",
       "embedVectorDesc": "โปรเจกต์นี้มีเลเยอร์เวกเตอร์ในเครื่อง {{count}} เลเยอร์ที่โหลดมาจากคอมพิวเตอร์ของคุณ เบราว์เซอร์ไม่สามารถอ่านไฟล์เหล่านั้นซ้ำได้เมื่อเปิดโปรเจกต์อีกครั้ง จึงต้องฝังข้อมูลไว้ในไฟล์โปรเจกต์เพื่อให้กู้คืนได้ การฝังข้อมูลจะเพิ่มขนาดไฟล์ประมาณ {{size}}",
       "embedVectorDescDesktop": "โปรเจกต์นี้มีเลเยอร์เวกเตอร์ในเครื่อง {{count}} เลเยอร์ที่โหลดมาจากคอมพิวเตอร์ของคุณ คุณสามารถฝังข้อมูลเพื่อให้โปรเจกต์สมบูรณ์ในตัว (เพิ่มขนาดประมาณ {{size}}) หรือบันทึกเป็นการอ้างอิงไฟล์ที่จะโหลดจากดิสก์เมื่อเปิดโปรเจกต์อีกครั้ง การอ้างอิงจะทำให้ไฟล์มีขนาดเล็ก แต่จะใช้ไม่ได้หากไฟล์ต้นทางถูกย้ายหรือลบในภายหลัง",
       "embedVectorDescMas": "โปรเจกต์นี้มีเลเยอร์เวกเตอร์ในเครื่อง {{count}} เลเยอร์ที่โหลดจากคอมพิวเตอร์ของคุณ แซนด์บ็อกซ์ของ Mac App Store ไม่สามารถคงสิทธิ์การเข้าถึงไฟล์เหล่านี้ไว้หลังจากปิด GeoLibre ได้ จึงต้องฝังข้อมูลไว้ในไฟล์โปรเจกต์เพื่อให้กู้คืนได้ การฝังจะเพิ่มขนาดไฟล์ประมาณ {{size}}",
@@ -2896,6 +3076,8 @@
       "maplibre-gl-esri-wayback": "ภาพถ่ายย้อนหลัง",
       "maplibre-gl-openaerialmap": "OpenAerialMap",
       "maplibre-gl-arcgis-hub": "ArcGIS Hub",
+      "geolibre-osm-downloader": "ตัวดาวน์โหลด OSM",
+      "geolibre-ign-lidar-hd": "IGN LiDAR HD Downloader",
       "geolibre-stac-catalogs": "แคตตาล็อก STAC",
       "geolibre-planet-open-data": "ข้อมูลเปิดของ Planet",
       "maplibre-gl-source-coop": "Source Cooperative",
@@ -2907,6 +3089,7 @@
       "maplibre-gl-huggingface": "Hugging Face",
       "carto-light": "แผนที่ฐาน Carto Light",
       "geolibre-flight-simulator": "เครื่องจำลองการบิน",
+      "gods-eye-view": "มุมมองรอบรู้",
       "geolibre-route-animation": "แอนิเมชันเส้นทาง",
       "geolibre-sun": "การจำลองดวงอาทิตย์",
       "maplibre-atmosphere-effects": "เอฟเฟกต์ชั้นบรรยากาศ",
@@ -3074,9 +3257,14 @@
     "openBuilder": "ตัวสร้างนิพจน์...",
     "invalidExpression": "ป้อนนิพจน์แบบบูลีนที่ถูกต้อง",
     "select": "เลือกฟีเจอร์",
+    "applyLayerFilter": "กรองเลเยอร์",
+    "clearLayerFilter": "ล้างตัวกรองเลเยอร์",
+    "layerFilteredHint": "ตัวกรองถาวรกำลังซ่อนฟีเจอร์บางส่วนของเลเยอร์นี้อยู่",
+    "layerFilteredBothHint": "ตัวกรองถาวรและตัวกรองด่วนกำลังซ่อนฟีเจอร์บางส่วนของเลเยอร์นี้อยู่",
     "noLayers": "เพิ่มเลเยอร์เวกเตอร์ที่มีฟีเจอร์เพื่อทำการเลือก",
     "needTwoLayers": "การเลือกตามตำแหน่งต้องใช้เลเยอร์เวกเตอร์ที่มีฟีเจอร์สองเลเยอร์",
     "summary": "เลือกแล้ว {{selected}} จาก {{total}} ฟีเจอร์ (ตรงกัน {{matched}} รายการ)",
+    "filterSummary": "ใช้ตัวกรองเลเยอร์แล้ว: ตรงกัน {{matched}} จาก {{total}} ฟีเจอร์",
     "evaluationErrors": "มี {{count}} ฟีเจอร์ที่ประเมินค่าไม่ได้และไม่ถูกนับว่าตรงกัน",
     "unevaluableDisjoint": "มี {{count}} ฟีเจอร์ที่ถูกคัดออกเนื่องจากประเมินค่าเรขาคณิตไม่ได้",
     "tooManyPairs": "การเปรียบเทียบนี้ต้องทดสอบคู่ฟีเจอร์ {{pairs}} คู่ (ขีดจำกัด {{limit}}) กรุณาใช้ ประมวลผล → GeoLibre → เวกเตอร์ → เลือกตามตำแหน่ง ด้วยเอนจิน Sidecar แทน",
@@ -3532,10 +3720,14 @@
     "title": "แคตตาล็อก STAC",
     "footprintLayerName": "ขอบเขตผลการค้นหา STAC",
     "catalogSearch": "ค้นหาแคตตาล็อกสาธารณะจาก STAC Index",
+    "portolanCatalogSearch": "ค้นหาแคตตาล็อกสาธารณะจาก Portolan Registry",
     "catalogSearchPlaceholder": "ค้นหาชื่อแคตตาล็อก…",
     "indexLoading": "กำลังโหลด STAC Index…",
+    "portolanIndexLoading": "กำลังโหลด Portolan Registry…",
     "indexUnavailable": "ไม่สามารถใช้ STAC Index ได้ — กรุณาป้อน URL",
+    "portolanIndexUnavailable": "ไม่สามารถใช้ Portolan Registry ได้: กรุณาป้อน URL",
     "indexLoadFailed": "ไม่สามารถโหลด STAC Index ได้",
+    "portolanIndexLoadFailed": "ไม่สามารถโหลด Portolan Registry ได้",
     "urlLabel": "URL ของแคตตาล็อกหรือ API แบบ STAC",
     "connect": "เชื่อมต่อ",
     "connecting": "กำลังเชื่อมต่อ STAC…",
@@ -4434,6 +4626,10 @@
       "errorStartSidecar": "ไม่สามารถเริ่ม GeoLibre sidecar ได้",
       "errorStopSidecar": "ไม่สามารถหยุด GeoLibre sidecar ได้",
       "noToolsFound": "ไม่พบเครื่องมือ",
+      "searchToolsByMeaning": "ค้นหาเครื่องมือหรืออธิบายงาน",
+      "searchingByMeaning": "กำลังค้นหาแค็ตตาล็อกตามความหมาย",
+      "bestMatches": "ผลลัพธ์ที่ตรงที่สุด",
+      "otherMatches": "ผลลัพธ์อื่น ๆ",
       "noParameters": "เครื่องมือนี้ไม่มีพารามิเตอร์",
       "noOutput": "ยังไม่มีผลลัพธ์",
       "enabled": "เปิดใช้งาน",
@@ -4508,6 +4704,10 @@
                 "inside": "ด้านใน (ย่อ)",
                 "both": "ทั้งสองด้าน"
               }
+            },
+            "dissolve": {
+              "label": "รวมผลลัพธ์",
+              "description": "ผสานบัฟเฟอร์ทั้งหมดให้เป็นฟีเจอร์เดียวและรวมส่วนที่ซ้อนทับกันเข้าด้วยกัน รูปร่างที่ผสานแล้วไม่ได้เป็นของฟีเจอร์นำเข้าใด จึงตัดแอตทริบิวต์ทิ้ง หากต้องการรวมตามแอตทริบิวต์ ให้เรียกใช้เครื่องมือรวมพื้นที่ติดกันกับผลลัพธ์"
             }
           }
         },
@@ -6320,6 +6520,7 @@
     "description": "บันทึก เรียกดู และนำสไตล์ สัญลักษณ์ ค่าตั้งต้นของป้ายกำกับ และไล่เฉดสีที่นำกลับมาใช้ใหม่ได้ไปใช้กับเลเยอร์และโปรเจกต์ต่าง ๆ",
     "searchPlaceholder": "ค้นหาสไตล์และแท็ก…",
     "presetsSection": "ค่าตั้งต้นในตัว",
+    "presetActions": "การดำเนินการกับค่าตั้งต้น",
     "librarySection": "คลังของฉัน",
     "projectSection": "โปรเจกต์นี้",
     "empty": "ไม่มีสไตล์ที่บันทึกไว้ตรงกัน กรุณาบันทึกสไตล์ของเลเยอร์หรือนำเข้าคลังเพื่อเริ่มต้น",
@@ -6683,6 +6884,7 @@
     "footerDeck": "การเปลี่ยนแปลงจะมีผลทันทีกับการจัดสไตล์เลเยอร์ deck.gl ของ DuckDB",
     "footerMaplibre": "การเปลี่ยนแปลงจะมีผลทันทีกับคุณสมบัติการวาดของ MapLibre",
     "pluginPaintedFooter": "เลเยอร์นี้ถูกวาดโดยปลั๊กอินของตัวเอง ซึ่งมีตัวควบคุมสไตล์ของมันเอง",
+    "serviceStyledFooter": "เลเยอร์นี้คงรูปแบบของบริการต้นทางไว้ ส่วนความทึบ ลำดับ ช่วงการซูม และตัวกรองยังคงมีผล",
     "extrusion": {
       "color": "สีของส่วนที่ยกตัว",
       "opacity": "ความทึบของส่วนที่ยกตัว",
@@ -6878,6 +7080,11 @@
       "invalidExpression": "นิพจน์ไม่ถูกต้อง",
       "openBuilder": "เปิดตัวสร้างนิพจน์",
       "showFeatureId": "แสดงแถวรหัสฟีเจอร์",
+      "maxWidth": "ความกว้างของป๊อปอัป (พิกเซล)",
+      "maxWidthPlaceholder": "ค่าเริ่มต้น",
+      "imageHeight": "ความสูงของรูปภาพ (พิกเซล)",
+      "imageHeightPlaceholder": "ค่าเริ่มต้น",
+      "sizeHint": "เว้นว่างไว้เพื่อใช้ค่าเริ่มต้น รูปภาพจะคงสัดส่วนเดิมไว้ ดังนั้นต้องขยายป๊อปอัปให้กว้างขึ้น รูปถ่ายจึงจะใช้ความสูงที่เพิ่มมาได้",
       "fields": "ฟิลด์",
       "allFields": "ยังไม่ได้เลือกฟิลด์ใด จึงแสดงฟิลด์ที่มองเห็นได้ทั้งหมดตามลำดับของข้อมูลเอง",
       "addField": "เพิ่มฟิลด์…",
@@ -6939,6 +7146,7 @@
     "allFieldsUsed": "ทุกฟิลด์มีตัวกรองอยู่แล้ว",
     "removeAll": "นำออกทั้งหมด",
     "clearAll": "ล้างตัวกรอง",
+    "clearAllWithExpression": "ล้างตัวกรองและนิพจน์ที่บันทึกไว้",
     "clearOne": "ล้างตัวกรองนี้",
     "clearOneNamed": "ล้างตัวกรองบน {{field}}",
     "remove": "นำตัวกรองออก",
@@ -7071,6 +7279,9 @@
     "saveEditsSuccess": "บันทึก {{count}} ฟีเจอร์ลงไฟล์ต้นทางแล้ว",
     "saveEditsNoFeatures": "เลเยอร์นี้ไม่มีฟีเจอร์ให้บันทึก",
     "saveEditsError": "ไม่สามารถบันทึกการแก้ไขลงไฟล์ต้นทางได้",
+    "pendingTableDraftsBlocked": "ตารางแอตทริบิวต์มีการแก้ไขที่ยังไม่ได้บันทึกซึ่งไม่สามารถนำไปใช้ได้ แก้ไขหรือยกเลิกการแก้ไขเหล่านั้น แล้วลองอีกครั้ง",
+    "saveEditsToArcgis": "บันทึกการแก้ไขลงบริการ ArcGIS",
+    "saveEditsArcgisSuccess": "บันทึกลง ArcGIS แล้ว: เพิ่ม {{inserted}} แก้ไข {{updated}} ลบ {{deleted}}",
     "saveEditsToPostgis": "บันทึกการแก้ไขลงตาราง PostGIS",
     "saveEditsPostgisSuccess": "บันทึกลง {{table}} แล้ว: เพิ่ม {{inserted}} แก้ไข {{updated}} ลบ {{deleted}}",
     "saveEditsPostgisSkippedFields": "ฟิลด์ที่ไม่มีคอลัมน์ในตารางที่ตรงกันจะไม่ถูกบันทึก: {{fields}}",
@@ -7113,6 +7324,8 @@
     "renameGroup": "เปลี่ยนชื่อกลุ่ม",
     "moveGroupUp": "เลื่อนกลุ่มขึ้น",
     "moveGroupDown": "เลื่อนกลุ่มลง",
+    "sortGroupAscending": "เรียงจาก A ถึง Z",
+    "sortGroupDescending": "เรียงจาก Z ถึง A",
     "ungroupKeepLayers": "ยกเลิกการจัดกลุ่ม (คงเลเยอร์ไว้)",
     "deleteGroupAndLayers": "ลบกลุ่มและเลเยอร์",
     "groupActions": "การดำเนินการกับกลุ่ม",
@@ -7228,7 +7441,20 @@
     "stretchLinear": "เชิงเส้น",
     "stretchLog": "ลอการิทึม",
     "stretchSqrt": "รากที่สอง",
+    "viewportStretch": "การยืดค่าตามมุมมอง",
+    "viewportMinMax": "ค่าต่ำสุด / สูงสุดของมุมมอง",
+    "viewportPercentile": "เปอร์เซ็นไทล์ 5–95 ของมุมมอง",
+    "viewportStddev": "ค่าเฉลี่ยของมุมมอง ± 2 ส่วนเบี่ยงเบนมาตรฐาน",
+    "viewportApply": "ใช้กับมุมมองปัจจุบัน",
+    "viewportStretching": "กำลังอ่านมุมมอง…",
+    "viewportStretchApplied": "ใช้การยืดค่าตามมุมมองแล้ว",
+    "viewportAuto": "อัปเดตอัตโนมัติเมื่อแผนที่เลื่อน",
+    "viewportStretchNoView": "ไม่มีมุมมองแผนที่ให้ใช้งาน",
+    "viewportStretchNoValues": "ไม่พบค่าแรสเตอร์ในมุมมอง",
+    "viewportStretchNoRange": "ค่าในมุมมองไม่สามารถกำหนดช่วงได้",
+    "viewportStretchMoved": "แผนที่เลื่อนก่อนที่การอ่านจะเสร็จ โปรดใช้อีกครั้ง",
     "index": "ดัชนี",
+    "opacityClasses": "ชั้นความทึบแสง",
     "classifyToggle": "จัดเป็นชั้นข้อมูลแบบไม่ต่อเนื่อง",
     "method": "วิธีการ",
     "methodEqualInterval": "ช่วงเท่ากัน",
@@ -7784,5 +8010,77 @@
     "catalogHuc12pp": "จุดระบายน้ำ HUC12",
     "catalogNmwdiSt": "สถานีตรวจวัดน้ำในรัฐนิวเม็กซิโก",
     "catalogFlowlines": "เส้นทางน้ำ NHDPlus"
+  },
+  "plugin": {
+    "3d-tiles": {
+      "arcgisSourceUnsupported": "ใช้ URL tileset.json ของ 3D Tiles ในมุมมอง ArcGIS นี้ ไทล์ Google Photorealistic และ I3S ต้องใช้เอนจินเรนเดอร์อื่น",
+      "globeGoogleKeyRequired": "การโหลด Google Photorealistic 3D Tiles บนลูกโลกต้องใช้คีย์ API ของ Google Maps ในการตั้งค่า"
+    },
+    "geolibre-osm-downloader": {
+      "title": "ตัวดาวน์โหลด OSM",
+      "hint": "ดาวน์โหลดข้อมูล OpenStreetMap จากพื้นที่บนแผนที่ปัจจุบันผ่าน Overpass API สาธารณะ",
+      "attribution": "ข้อมูล © ผู้มีส่วนร่วมใน OpenStreetMap ใช้งานภายใต้สัญญาอนุญาต ODbL",
+      "featureType": "ประเภทฟีเจอร์",
+      "presetBuildings": "อาคาร",
+      "presetRoads": "ถนน",
+      "presetAmenities": "สิ่งอำนวยความสะดวก",
+      "presetWaterways": "ทางน้ำ",
+      "presetLanduse": "การใช้ที่ดิน",
+      "presetCustom": "แท็กกำหนดเอง",
+      "presetAll": "ฟีเจอร์ที่มีแท็กทั้งหมด",
+      "tagKey": "คีย์แท็ก",
+      "tagValue": "ค่าแท็ก",
+      "tagKeyPlaceholder": "เช่น shop",
+      "tagValuePlaceholder": "ไม่บังคับ เช่น bakery",
+      "west": "ทิศตะวันตก",
+      "south": "ทิศใต้",
+      "east": "ทิศตะวันออก",
+      "north": "ทิศเหนือ",
+      "useMapExtent": "ใช้ขอบเขตแผนที่",
+      "download": "ดาวน์โหลดข้อมูล OSM",
+      "ready": "เลือกพื้นที่และประเภทฟีเจอร์",
+      "exportGeoJson": "บันทึกเป็น GeoJSON",
+      "mapUnavailable": "ยังไม่มีขอบเขตแผนที่",
+      "extentApplied": "ใช้ขอบเขตแผนที่แล้ว",
+      "downloading": "กำลังดาวน์โหลดจาก OpenStreetMap…",
+      "noFeatures": "ไม่พบฟีเจอร์ที่ตรงกันในพื้นที่นี้",
+      "error": "ไม่สามารถดาวน์โหลดข้อมูล OSM ได้: {{message}}",
+      "added": "เพิ่มฟีเจอร์ {{count}} รายการลงบนแผนที่"
+    },
+    "geolibre-ign-lidar-hd": {
+      "title": "IGN LiDAR HD",
+      "hint": "ค้นหาขอบเขตไทล์ IGN LiDAR HD สำหรับพื้นที่แผนที่ปัจจุบัน เพิ่มไทล์ลงในแผนที่เป็นพอยต์คลาวด์ หรือดาวน์โหลดไฟล์ COPC LAZ จากเซิร์ฟเวอร์ของ IGN",
+      "attribution": "ข้อมูล © IGN — LiDAR HD เผยแพร่ภายใต้ Licence Ouverte 2.0",
+      "west": "ทิศตะวันตก",
+      "south": "ทิศใต้",
+      "east": "ทิศตะวันออก",
+      "north": "ทิศเหนือ",
+      "useMapExtent": "ใช้ขอบเขตแผนที่",
+      "search": "ค้นหาไทล์",
+      "addToMap": "เพิ่มลงในแผนที่",
+      "download": "ดาวน์โหลด",
+      "ready": "เลือกพื้นที่แล้วค้นหาไทล์ LiDAR HD",
+      "mapUnavailable": "ยังไม่มีขอบเขตแผนที่",
+      "extentApplied": "ใช้ขอบเขตแผนที่แล้ว",
+      "searching": "กำลังค้นหาไทล์ IGN LiDAR HD…",
+      "noTiles": "ไม่พบไทล์ LiDAR HD ในพื้นที่นี้",
+      "noDownload": "ไม่มีพอยต์คลาวด์เผยแพร่",
+      "layerName": "ไทล์ IGN LiDAR HD",
+      "found": "พบ {{count}} ไทล์",
+      "foundTruncated": "กำลังแสดง {{count}} ไทล์แรกจากทั้งหมด {{matched}} ไทล์ ลดพื้นที่ค้นหาเพื่อดูที่เหลือ",
+      "addedToMap": "เพิ่ม {{name}} ลงในแผนที่แล้ว",
+      "alreadyOnMap": "{{name}} อยู่บนแผนที่แล้ว",
+      "unsupportedRenderer": "พอยต์คลาวด์ต้องใช้ตัวเรนเดอร์ MapLibre หรือ Mapbox",
+      "addError": "ไม่สามารถเพิ่ม {{name}} ลงในแผนที่ได้: {{message}}",
+      "error": "ไม่สามารถค้นหาไทล์ IGN LiDAR HD ได้: {{message}}",
+      "selectAll": "เลือกทั้งหมด",
+      "selectTile": "เลือก {{name}}",
+      "addSelectedToMap": "เพิ่มรายการที่เลือกลงในแผนที่",
+      "addSelectedToMapCount": "เพิ่ม {{count}} รายการที่เลือกลงในแผนที่",
+      "addingSelected": "กำลังเพิ่ม {{count}} ไทล์ลงในแผนที่…",
+      "addedSelectedCount": "เพิ่ม {{count}} ไทล์ลงในแผนที่แล้ว",
+      "alreadyOnMapCountPlural": "{{count}} ไทล์อยู่บนแผนที่แล้ว",
+      "addSelectedFailedCount": "ไม่สามารถเพิ่ม {{count}} ไทล์ได้"
+    }
   }
 }

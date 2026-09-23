@@ -36,6 +36,8 @@ import {
   unwireVectorStoreSync,
   wireVectorStoreSync,
 } from "./vector-layer-sync";
+import { bridgeVectorControlToStore, exceedsCesiumVectorLimit } from "./vector-cesium-bridge";
+import { applyVectorContainerColors, groupVectorContainerImports } from "./vector-container-group";
 import { readableStacLayerHref } from "./stac-signing";
 import type { FeatureCollection } from "geojson";
 
@@ -247,6 +249,11 @@ export async function reloadVectorControlLayer(id: string): Promise<VectorLayerI
   return vectorControl.reloadLayer(id);
 }
 
+/** Read complete source features for an imported vector layer, including tiled layers. */
+export async function getVectorLayerGeoJSON(id: string): Promise<FeatureCollection | null> {
+  return vectorControl?.getLayerGeoJSON(id) ?? null;
+}
+
 /**
  * Reads one Add Vector Layer attribute without materializing tiled geometry.
  *
@@ -408,7 +415,9 @@ export function restoreVectorLayers(app: GeoLibreAppAPI): void {
         // Replay them directly (re-ingesting tiles when that was the render
         // mode); the restored layer becomes data-backed and re-embeds on the
         // next save.
-        const embedded = readEmbeddedVectorGeoJSON(layer.metadata.embeddedGeoJSON);
+        const embedded =
+          readEmbeddedVectorGeoJSON(layer.geojson) ??
+          readEmbeddedVectorGeoJSON(layer.metadata.embeddedGeoJSON);
         if (embedded) {
           pending.push(
             trackReplay(
@@ -601,6 +610,48 @@ export async function replayVectorControlLayerById(
 }
 
 /**
+ * Keeps unsaved local-file layers across a control teardown. A browser-picked
+ * file has no URL or path to replay from and is only embedded on save, so
+ * without this a renderer switch that recreates the control would drop it.
+ * The departing control still holds the data: read it into `layer.geojson`,
+ * which restoreVectorLayers replays first. Bounded like the Cesium bridge's
+ * export; an oversize or streamed layer is left to the restore path's own
+ * "cannot be restored" message.
+ *
+ * @param control - The control about to be removed.
+ */
+export async function preserveUnsavedVectorLayers(
+  control: Pick<VectorControl, "getLayer" | "getLayerGeoJSON">,
+): Promise<void> {
+  const unsaved = useAppStore
+    .getState()
+    .layers.filter(
+      (layer) =>
+        isEmbeddableLocalVectorLayer(layer) &&
+        layer.metadata.localFileReloadable !== true &&
+        !readEmbeddedVectorGeoJSON(layer.geojson) &&
+        !readEmbeddedVectorGeoJSON(layer.metadata.embeddedGeoJSON),
+    );
+  await Promise.all(
+    unsaved.map(async (layer) => {
+      const info = control.getLayer(layer.id);
+      if (!info || exceedsCesiumVectorLimit(info)) return;
+      try {
+        const geojson = await control.getLayerGeoJSON(layer.id);
+        if (geojson && Array.isArray(geojson.features)) {
+          useAppStore.getState().updateLayer(layer.id, { geojson });
+        }
+      } catch (error) {
+        console.error(
+          `[GeoLibre] Could not keep vector layer "${layer.name}" for the new map`,
+          error,
+        );
+      }
+    }),
+  );
+}
+
+/**
  * Materializes the features of every embeddable local-file Add Vector Layer
  * layer as GeoJSON, so the web Save flow can offer to embed them in the saved
  * project (a browser-picked local file is otherwise lost on reopen, since the
@@ -678,6 +729,18 @@ function readEmbeddedVectorGeoJSON(value: unknown): FeatureCollection | null {
 async function ensureVectorControl(app: GeoLibreAppAPI): Promise<VectorControl | null> {
   const VectorControlClass = await getVectorControlClass();
 
+  // MapLibre's teardown can detach controls without invoking their onRemove.
+  // Recreate a detached panel so a renderer switch cannot reuse its old map.
+  const detached = vectorControl;
+  if (vectorControlMounted && detached && !detached.getContainer()?.isConnected) {
+    try {
+      await preserveUnsavedVectorLayers(detached);
+      // Re-check after the await: a concurrent call may have torn it down.
+      if (vectorControl === detached) detached.onRemove();
+    } catch (error) {
+      console.warn("[GeoLibre] Failed to tear down the detached vector control", error);
+    }
+  }
   vectorControl ??= createVectorControl(VectorControlClass, app);
 
   if (!vectorControlMounted) {
@@ -727,6 +790,25 @@ export async function addVectorLayersFromUrl(
   const control = await ensureVectorControl(app);
   if (!control) return null;
   return addVectorLayersThroughControl(control, url, options);
+}
+
+/** Import a local container with the control's layer picker and rendering path. */
+export async function addVectorFileToMap(
+  app: GeoLibreAppAPI,
+  file: File,
+  options: VectorLayerOptions = {},
+): Promise<number> {
+  const control = await ensureVectorControl(app);
+  if (!control) throw new Error("The vector control is unavailable.");
+  const id = crypto.randomUUID();
+  try {
+    await control.addData(file, { ...options, id });
+  } catch (error) {
+    if (isVectorLayerSelectionCancelled(error)) return 0;
+    throw error;
+  }
+  return control.getLayers().filter((layer) => layer.id === id || layer.id.startsWith(`${id}-`))
+    .length;
 }
 
 /** The subset of VectorControl used to add a remote dataset (eases testing). */
@@ -842,6 +924,9 @@ function createVectorControl(
     },
   });
 
+  if (["cesium", "mapbox", "arcgis"].includes(app.getMapRenderer?.() ?? ""))
+    bridgeVectorControlToStore(control, app);
+
   for (const event of ["layeradded", "layerremoved", "layerupdated"] as const) {
     control.on(event, () => syncVectorLayersToStore(control));
   }
@@ -852,6 +937,10 @@ function createVectorControl(
   const panelStateSyncHandler: VectorControlEventHandler = () => syncVectorLayersToStore(control);
   control.on("expand", panelStateSyncHandler);
   control.on("collapse", panelStateSyncHandler);
+  groupVectorContainerImports(control, (name, ids, style) => {
+    applyVectorContainerColors(ids, style);
+    useAppStore.getState().addLayerGroup(name, ids);
+  });
   wireVectorStoreSync(control);
   patchVectorControlOnRemove(control, panelStateSyncHandler);
 

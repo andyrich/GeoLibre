@@ -9,6 +9,7 @@ import {
 } from "../packages/plugins/src/plugins/maplibre-open-data-catalogs";
 import {
   maplibrePlanetOpenDataPlugin,
+  maplibrePortolanPlugin,
   maplibreStacCatalogsPlugin,
 } from "../packages/plugins/src/plugins/maplibre-stac";
 import {
@@ -73,29 +74,49 @@ describe("Tier 1 built-in plugin engine support audit", () => {
   it("declares support for both MapLibre and Cesium on all audited Tier 1 plugins", () => {
     for (const plugin of tier1Plugins) {
       assert.ok(plugin.engines, `Plugin ${plugin.id} must declare engines`);
-      assert.deepEqual(
-        plugin.engines,
-        ["maplibre", "cesium"],
-        `Plugin ${plugin.id} must declare ["maplibre", "cesium"]`,
-      );
-      assert.equal(isPluginEngineSupported(plugin, "maplibre"), true);
-      assert.equal(isPluginEngineSupported(plugin, "cesium"), true);
+      assert.equal(isPluginEngineSupported(plugin, "maplibre"), true, plugin.id);
+      assert.equal(isPluginEngineSupported(plugin, "cesium"), true, plugin.id);
     }
   });
 
-  it("declares support for MapLibre only on BasemapControl plugin", () => {
-    assert.deepEqual(maplibreBasemapControlPlugin.engines, ["maplibre"]);
+  // The catalog browsers only write to the store, so the Mapbox renderer draws
+  // what they add as well; the basemap presets are style swaps the Mapbox
+  // engine does not host.
+  it("declares Mapbox support on the store-only catalog browsers", () => {
+    for (const plugin of [
+      maplibreSourceCoopPlugin,
+      maplibreNaturalEarthPlugin,
+      maplibreArcGisHubPlugin,
+      maplibreSocrataPlugin,
+      maplibreCkanPlugin,
+    ]) {
+      assert.deepEqual(plugin.engines, ["maplibre", "cesium", "mapbox"], plugin.id);
+    }
+    for (const plugin of [osmBasemapPlugin, cartoLightPlugin]) {
+      assert.equal(isPluginEngineSupported(plugin, "mapbox"), false, plugin.id);
+    }
+  });
+
+  // Mapbox shares the basemap control (its style picker lives there), but the
+  // control still has no Cesium counterpart.
+  it("declares support for MapLibre and Mapbox but not Cesium on BasemapControl plugin", () => {
+    assert.deepEqual(maplibreBasemapControlPlugin.engines, ["maplibre", "mapbox"]);
     assert.equal(isPluginEngineSupported(maplibreBasemapControlPlugin, "maplibre"), true);
+    assert.equal(isPluginEngineSupported(maplibreBasemapControlPlugin, "mapbox"), true);
     assert.equal(isPluginEngineSupported(maplibreBasemapControlPlugin, "cesium"), false);
   });
 
-  // Both STAC plugins come out of the same createStacPlugin factory, so they
-  // are audited together: the panel is engine-neutral, but footprints, the
-  // "current view" search bbox, the draw-bbox tool, and footprint click/hover
-  // all need app.getMap(), which only MapLibre provides.
-  it("declares support for MapLibre only on the STAC catalog plugins", () => {
-    for (const plugin of [maplibreStacCatalogsPlugin, maplibrePlanetOpenDataPlugin]) {
-      assert.deepEqual(plugin.engines, ["maplibre"], `Plugin ${plugin.id} must be MapLibre-only`);
+  // The STAC plugins come out of the same createStacPlugin factory, so they
+  // are audited together: footprints, bbox drawing and picking use the
+  // native GeoJSON APIs shared by MapLibre and Mapbox.
+  it("declares MapLibre and Mapbox support on the STAC catalog plugins", () => {
+    for (const plugin of [
+      maplibreStacCatalogsPlugin,
+      maplibrePlanetOpenDataPlugin,
+      maplibrePortolanPlugin,
+    ]) {
+      assert.deepEqual(plugin.engines, ["maplibre", "mapbox"]);
+      assert.equal(isPluginEngineSupported(plugin, "mapbox"), true);
       assert.equal(isPluginEngineSupported(plugin, "maplibre"), true);
       assert.equal(isPluginEngineSupported(plugin, "cesium"), false);
     }

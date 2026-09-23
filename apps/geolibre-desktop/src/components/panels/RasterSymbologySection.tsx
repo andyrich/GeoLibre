@@ -21,7 +21,9 @@ import {
   type PaletteLegendEntry,
   savedRasterSymbology,
   warmColormapColors,
+  readRasterWindow,
 } from "@geolibre/plugins";
+import type { MapEngine, MapExtent } from "@geolibre/map";
 import {
   Button,
   ColorField,
@@ -40,11 +42,17 @@ import {
   indexById,
   NORMALIZED_DIFFERENCE_INDICES,
 } from "maplibre-gl-raster";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { useTranslation } from "react-i18next";
 import { useColormapRamps } from "../../hooks/useColormapRamps";
 import { formatLegendNumber, setLegendCustomEntry } from "../../lib/auto-legend";
 import { savedRasterAttributeTable } from "../../lib/raster-attribute-table";
+import {
+  normalizeStretchMethod,
+  stretchSamples,
+  viewportRange,
+  type ViewportStretchMethod,
+} from "../../lib/viewport-stretch";
 
 type RasterStateRecord = {
   mode: "single" | "rgb" | "index";
@@ -57,6 +65,8 @@ type RasterStateRecord = {
   nodata: number | "auto" | "off";
   stretch: "linear" | "log" | "sqrt";
   gamma: number;
+  viewportStretchAuto?: boolean;
+  viewportStretchMethod?: ViewportStretchMethod;
 };
 
 const CLASSIFICATION_METHODS: {
@@ -119,6 +129,8 @@ function readRasterState(layer: GeoLibreLayer): RasterStateRecord {
         : "auto",
     stretch: raw.stretch === "log" || raw.stretch === "sqrt" ? raw.stretch : "linear",
     gamma: typeof raw.gamma === "number" && raw.gamma > 0 ? raw.gamma : 1,
+    viewportStretchAuto: raw.viewportStretchAuto === true,
+    viewportStretchMethod: normalizeStretchMethod(raw.viewportStretchMethod),
   };
 }
 
@@ -144,6 +156,14 @@ function rangeFromBreaks(breaks: number[]): [number, number][] {
   return [[breaks[0], breaks[breaks.length - 1]]];
 }
 
+/** The value domain a continuous opacity ramp's breaks span, if they are usable. */
+function opacityRangeFromBreaks(breaks: number[]): [number, number] | undefined {
+  const [min, max] = rangeFromBreaks(breaks)[0];
+  return breaks.length >= 2 && Number.isFinite(min) && Number.isFinite(max) && max > min
+    ? [min, max]
+    : undefined;
+}
+
 /**
  * Single-band pseudocolor (with optional discrete classification) and RGB
  * band-combination controls for a maplibre-gl-raster COG layer. Edits the
@@ -153,7 +173,13 @@ function rangeFromBreaks(breaks: number[]): [number, number][] {
  *
  * @param props.layer - The selected raster store layer.
  */
-export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
+export function RasterSymbologySection({
+  layer,
+  mapControllerRef,
+}: {
+  layer: GeoLibreLayer;
+  mapControllerRef?: RefObject<MapEngine | null>;
+}) {
   const { t } = useTranslation();
   const updateLayer = useAppStore((s) => s.updateLayer);
   const state = readRasterState(layer);
@@ -226,14 +252,22 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
   useEffect(() => {
     setStats(null);
     let cancelled = false;
-    if (!symbology?.classified || symbology.method === "manual") return;
+    if (!(symbology?.classified || symbology?.opacityClasses) || symbology.method === "manual")
+      return;
     void getRasterBandStats(layer.id, band, localBytesUrl).then((result) => {
       if (!cancelled && result) setStats(result);
     });
     return () => {
       cancelled = true;
     };
-  }, [layer.id, band, symbology?.classified, symbology?.method, localBytesUrl]);
+  }, [
+    layer.id,
+    band,
+    symbology?.classified,
+    symbology?.opacityClasses,
+    symbology?.method,
+    localBytesUrl,
+  ]);
 
   // Classification can be enabled before stats arrive (breaks fall back to the
   // [0, …, 1] default range), and switching bands while classified leaves the
@@ -244,12 +278,17 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
   useEffect(() => {
     if (!stats || stats === lastStatsRef.current) return;
     lastStatsRef.current = stats;
-    if (!symbology?.classified || symbology.method === "manual") return;
+    if (!(symbology?.classified || symbology?.opacityClasses) || symbology.method === "manual")
+      return;
     const isDefaultRange = symbology.breaks[0] === 0 && symbology.breaks.at(-1) === 1;
     const coversData =
       stats.min >= symbology.breaks[0] &&
       stats.max <= symbology.breaks[symbology.breaks.length - 1];
-    if (isDefaultRange || !coversData) recomputeSymbology({ ...symbology });
+    if (isDefaultRange || !coversData) {
+      // Always explicit: the breaks-derived fallback in recomputeSymbology
+      // would otherwise re-use the very breaks this effect is replacing.
+      recomputeSymbology({ ...symbology }, { range: [stats.min, stats.max] });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stats]);
 
@@ -317,13 +356,33 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
 
   function recomputeSymbology(
     next: Pick<RasterSymbology, "ramp" | "method" | "classCount" | "customColors">,
-    overrides: { range?: [number, number]; manualBreaks?: number[] } = {},
+    overrides: {
+      range?: [number, number];
+      manualBreaks?: number[];
+      classified?: boolean;
+      opacityClasses?: boolean;
+    } = {},
   ): void {
     // Reusing the prior histogram here is safe: a range override only happens
     // for equal-interval (the Min/Max inputs are disabled for quantile), and
     // equal-interval breaks use only min/max — never the histogram.
-    const effectiveStats: RasterBandStats | null = overrides.range
-      ? { min: overrides.range[0], max: overrides.range[1], histogram: stats?.histogram ?? [] }
+    //
+    // A continuous opacity ramp keeps its value domain in `breaks` alone (the
+    // display stretch is edited separately and is not rewritten here), so a
+    // later method / class-count edit re-derives the range from those breaks —
+    // reading `state.rescale` instead would discard a Min/Max edit made through
+    // the opacity controls. The gate looks at the classification state this
+    // call is about to commit, not the pre-toggle one, so switching on
+    // "Classify into discrete classes" still derives its classes from the full
+    // data range exactly as it does from a plain continuous ramp.
+    const nextClassified = overrides.classified ?? symbology?.classified ?? false;
+    const range =
+      overrides.range ??
+      (!nextClassified && symbology?.opacityClasses && next.method === "equal-interval"
+        ? (opacityRangeFromBreaks(symbology.breaks) ?? state.rescale?.[0])
+        : undefined);
+    const effectiveStats: RasterBandStats | null = range
+      ? { min: range[0], max: range[1], histogram: stats?.histogram ?? [] }
       : stats;
     // A manual symbology whose edges already match the requested class count
     // keeps them verbatim, even past the 12-class authoring cap:
@@ -355,9 +414,16 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
       breaks.length - 1,
     );
     commit({
-      statePatch: { colormap: next.ramp, rescale: rangeFromBreaks(breaks) },
+      // Discrete colors use the class extent as their renderer rescale. For a
+      // continuous ramp, breaks describe opacity only and must not replace the
+      // user's current display stretch.
+      statePatch: {
+        colormap: next.ramp,
+        ...(nextClassified ? { rescale: rangeFromBreaks(breaks) } : {}),
+      },
       symbology: {
-        classified: true,
+        classified: nextClassified,
+        opacityClasses: overrides.opacityClasses ?? symbology?.opacityClasses,
         ramp: next.ramp,
         method: next.method,
         // Derived from the breaks actually computed, not the requested count:
@@ -546,21 +612,19 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
   const isCustom = (customColors?.length ?? 0) >= MIN_CUSTOM_COLORS;
   const rampSelectValue = isCustom ? CUSTOM_RAMP_VALUE : ramp;
 
-  // A custom ramp is the only thing the upstream control can't express for a
-  // continuous layer, so it carries a classified:false symbology record the
-  // render injection reads; otherwise no record is needed (the control renders
-  // the named colormap, reversal included). Breaks are required by the record
-  // but unused while continuous, so seed them from whatever range is known.
+  // Preserve opacity ranges when changing ramps or disabling discrete colors.
   function continuousSymbology(opts: {
     ramp: string;
     customColors?: string[];
   }): RasterSymbology | null {
     const custom =
       (opts.customColors?.length ?? 0) >= MIN_CUSTOM_COLORS ? opts.customColors : undefined;
-    if (!custom) return null;
-    const breaks = computeRasterBreaks(method, stats, classCount);
+    if (!custom && !symbology?.opacityClasses && !symbology?.classOpacities) return null;
+    const breaks = symbology?.breaks ?? computeRasterBreaks(method, stats, classCount);
     return {
       classified: false,
+      opacityClasses: symbology?.opacityClasses || !!symbology?.classOpacities,
+      classOpacities: symbology?.classOpacities,
       ramp: opts.ramp,
       method,
       // Derived from the computed breaks (which clamp to the authoring cap)
@@ -578,9 +642,9 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
     commit({ statePatch: { reversed: next } });
   }
 
-  /** Updates one classified value range without disturbing the other classes. */
+  /** Updates one opacity range without disturbing the other ranges. */
   function setClassOpacity(index: number, opacity: number): void {
-    if (!symbology?.classified) return;
+    if (!symbology) return;
     const values = Array.from(
       { length: symbology.classCount },
       (_, classIndex) => symbology.classOpacities?.[classIndex] ?? 1,
@@ -592,9 +656,9 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
     commit({ symbology: next });
   }
 
-  /** Promotes the displayed class colors to a custom ramp and edits one class. */
+  /** Edits a ramp anchor while preserving continuous/discrete mode and opacity. */
   function setClassColor(index: number, color: string): void {
-    if (!symbology?.classified) return;
+    if (!symbology) return;
     commit({
       symbology: {
         ...symbology,
@@ -627,7 +691,10 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
     } else {
       commit({
         statePatch: { colormap: value },
-        symbology: continuousSymbology({ ramp: value, customColors: undefined }),
+        symbology: continuousSymbology({
+          ramp: value,
+          customColors: undefined,
+        }),
       });
     }
   }
@@ -750,10 +817,9 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
           checked={classified}
           onChange={(event) => {
             if (event.target.checked) {
-              recomputeSymbology({ ramp, method, classCount, customColors });
+              recomputeSymbology({ ramp, method, classCount, customColors }, { classified: true });
             } else {
-              // Drop classification but keep a custom ramp (reverse lives on
-              // rasterState and is untouched here).
+              // Keep custom colors and opacity ranges in continuous mode.
               commit({
                 symbology: continuousSymbology({ ramp, customColors }),
               });
@@ -763,7 +829,49 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
         {t("rasterSymbology.classifyToggle")}
       </label>
 
-      {classified && symbology && (
+      {!classified && state.mode === "single" && (
+        <label className="flex items-center gap-2 text-xs">
+          <input
+            type="checkbox"
+            checked={symbology?.opacityClasses ?? false}
+            onChange={(event) => {
+              if (event.target.checked) {
+                recomputeSymbology(
+                  { ramp, method, classCount, customColors },
+                  {
+                    classified: false,
+                    opacityClasses: true,
+                    // A histogram's bins describe the full statistics range,
+                    // so only equal intervals may use the display-range
+                    // override. Quantiles must retain the histogram bounds.
+                    range: method === "equal-interval" ? state.rescale?.[0] : undefined,
+                  },
+                );
+              } else if (symbology) {
+                // Mirror the classify-off handler: once opacity is gone, a
+                // custom ramp is the only thing the record still expresses, so
+                // drop it entirely rather than saving a dead `classified:
+                // false, opacityClasses: false` blob into the project.
+                const custom =
+                  (customColors?.length ?? 0) >= MIN_CUSTOM_COLORS ? customColors : undefined;
+                commit({
+                  symbology: custom
+                    ? {
+                        ...symbology,
+                        opacityClasses: false,
+                        classOpacities: undefined,
+                        customColors: custom,
+                      }
+                    : null,
+                });
+              }
+            }}
+          />
+          {t("rasterSymbology.opacityClasses")}
+        </label>
+      )}
+
+      {(classified || symbology?.opacityClasses) && symbology && (
         <ClassificationControls
           symbology={symbology}
           stats={stats}
@@ -774,7 +882,9 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
             // breaks, which would silently collapse the classification UI.
             const sorted = [...breaks].sort((a, b) => a - b);
             commit({
-              statePatch: { rescale: rangeFromBreaks(sorted) },
+              // Manual opacity breaks on a continuous ramp do not alter its
+              // renderer stretch; discrete classification still uses them.
+              statePatch: classified ? { rescale: rangeFromBreaks(sorted) } : undefined,
               symbology: { ...symbology, breaks: sorted },
             });
           }}
@@ -785,9 +895,22 @@ export function RasterSymbologySection({ layer }: { layer: GeoLibreLayer }) {
         />
       )}
 
-      {!classified && (
+      {!classified && !symbology?.opacityClasses && (
         <RescaleControls
           rescale={state.rescale}
+          onChange={(rescale) => commit({ statePatch: { rescale } })}
+        />
+      )}
+
+      {!classified && (
+        <ViewportStretchControls
+          layerId={layer.id}
+          band={band}
+          mapControllerRef={mapControllerRef}
+          autoUpdateInitial={state.viewportStretchAuto === true}
+          onAutoUpdate={(enabled) => commit({ statePatch: { viewportStretchAuto: enabled } })}
+          methodInitial={state.viewportStretchMethod ?? "minmax"}
+          onMethod={(method) => commit({ statePatch: { viewportStretchMethod: method } })}
           onChange={(rescale) => commit({ statePatch: { rescale } })}
         />
       )}
@@ -1146,6 +1269,179 @@ function ClassOpacityInput({
       </span>
     </div>
   );
+}
+
+function ViewportStretchControls({
+  layerId,
+  band,
+  mapControllerRef,
+  autoUpdateInitial,
+  onAutoUpdate,
+  methodInitial,
+  onMethod,
+  onChange,
+}: {
+  layerId: string;
+  band: number;
+  mapControllerRef?: RefObject<MapEngine | null>;
+  autoUpdateInitial: boolean;
+  onAutoUpdate: (enabled: boolean) => void;
+  methodInitial: ViewportStretchMethod;
+  onMethod: (method: ViewportStretchMethod) => void;
+  onChange: (rescale: [number, number][] | null) => void;
+}) {
+  const { t } = useTranslation();
+  const [method, setMethod] = useState<ViewportStretchMethod>(methodInitial);
+  const [autoUpdate, setAutoUpdate] = useState(autoUpdateInitial);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const abortRef = useRef<AbortController | null>(null);
+  // The parent rebuilds its onChange on every render and applying a range
+  // updates the layer, which re-renders the parent. Reading the callback from a
+  // ref keeps `apply` stable, so the auto-update effect isn't torn down and
+  // re-fired by its own write -- a loop that would keep reading the raster
+  // without the camera ever moving.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    setAutoUpdate(autoUpdateInitial);
+  }, [autoUpdateInitial]);
+
+  useEffect(() => {
+    setMethod(methodInitial);
+  }, [methodInitial]);
+
+  const apply = useCallback(
+    async (silent = false): Promise<void> => {
+      const bounds = mapControllerRef?.current?.getViewBounds?.();
+      if (!bounds) {
+        if (!silent) setMessage(t("rasterSymbology.viewportStretchNoView"));
+        return;
+      }
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+      setBusy(true);
+      if (!silent) setMessage("");
+      try {
+        const values = await readViewportValues(layerId, band, bounds, controller.signal);
+        if (controller.signal.aborted) return;
+        // A read only describes the extent it started for, and panning changes
+        // neither layerId, band, nor method -- so nothing above cancels it.
+        // Drop it here instead of persisting a range for an extent the map no
+        // longer shows. With auto-update on, the camera-idle listener has
+        // already queued a fresh read for the new extent.
+        if (!sameExtent(mapControllerRef?.current?.getViewBounds?.(), bounds)) {
+          if (!silent) setMessage(t("rasterSymbology.viewportStretchMoved"));
+          return;
+        }
+        if (values.length === 0) {
+          if (!silent) setMessage(t("rasterSymbology.viewportStretchNoValues"));
+          return;
+        }
+        const range = viewportRange(values, method);
+        if (range[0] >= range[1]) {
+          if (!silent) setMessage(t("rasterSymbology.viewportStretchNoRange"));
+          return;
+        }
+        onChangeRef.current([range]);
+        if (!silent) setMessage(t("rasterSymbology.viewportStretchApplied"));
+      } catch (error) {
+        if (!controller.signal.aborted && !silent) {
+          setMessage(error instanceof Error ? error.message : String(error));
+        }
+      } finally {
+        // Ownership, not the abort flag, decides who clears busy: a superseded
+        // read must leave it set for the read that replaced it, while an
+        // aborted read that nothing replaced must clear it or the Apply button
+        // stays disabled for good.
+        if (abortRef.current === controller) {
+          abortRef.current = null;
+          setBusy(false);
+        }
+      }
+    },
+    [band, layerId, mapControllerRef, method, t],
+  );
+
+  // A read is only meaningful for the layer, band, and method it started under,
+  // so drop it when any of those change. The auto-update effect below aborts
+  // too, but only while auto-update is on -- without this a manual read could
+  // land after a band switch and apply the previous band's range.
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+    },
+    [band, layerId, method],
+  );
+
+  return (
+    <div className="mt-3 space-y-2 border-t pt-3">
+      <Label htmlFor="rasterViewportStretch">{t("rasterSymbology.viewportStretch")}</Label>
+      <div className="grid grid-cols-[1fr_auto] gap-2">
+        <Select
+          id="rasterViewportStretch"
+          value={method}
+          onChange={(event) => {
+            const next = event.target.value as ViewportStretchMethod;
+            setMethod(next);
+            onMethod(next);
+          }}
+        >
+          <option value="minmax">{t("rasterSymbology.viewportMinMax")}</option>
+          <option value="percentile">{t("rasterSymbology.viewportPercentile")}</option>
+          <option value="stddev">{t("rasterSymbology.viewportStddev")}</option>
+        </Select>
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => void apply()}
+        >
+          {busy ? t("rasterSymbology.viewportStretching") : t("rasterSymbology.viewportApply")}
+        </Button>
+      </div>
+      <label className="flex items-center gap-2 text-xs">
+        <Input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={autoUpdate}
+          onChange={(event) => {
+            setAutoUpdate(event.target.checked);
+            onAutoUpdate(event.target.checked);
+          }}
+        />
+        {t("rasterSymbology.viewportAuto")}
+      </label>
+      {message && <p className="text-[10px] text-muted-foreground">{message}</p>}
+    </div>
+  );
+}
+
+// getViewBounds derives from the camera, so an unmoved map yields the identical
+// numbers and an exact comparison is enough here.
+function sameExtent(current: MapExtent | null | undefined, started: MapExtent): boolean {
+  return current != null && current.every((value, index) => value === started[index]);
+}
+
+async function readViewportValues(
+  layerId: string,
+  band: number,
+  bounds: [number, number, number, number],
+  signal?: AbortSignal,
+): Promise<number[]> {
+  const reading = await readRasterWindow(layerId, {
+    bounds,
+    band,
+    width: 32,
+    height: 32,
+    signal,
+  });
+  return stretchSamples(reading);
 }
 
 function RescaleControls({

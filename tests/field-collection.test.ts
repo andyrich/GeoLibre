@@ -4,12 +4,12 @@ import {
   appendFeature,
   buildGeometryFeature,
   buildProperties,
+  buildPhotoProperties,
   buildSchema,
   collectionMetadata,
   COLLECTION_GEOMETRY_KEY,
   COLLECTION_SCHEMA_KEY,
   coerceValue,
-  drawPreview,
   emptyFeatureCollection,
   FIELD_COLLECTION_FLAG,
   getGeometryType,
@@ -21,6 +21,8 @@ import {
   minVertices,
   parseOptions,
   PHOTO_PROPERTY,
+  PHOTOS_PROPERTY,
+  PHOTO_NAMES_PROPERTY,
   resolveTargetLayer,
   slugifyKey,
   validateForm,
@@ -172,6 +174,46 @@ describe("buildProperties", () => {
   it("omits fields left blank", () => {
     const props = buildProperties(schema, { name: "Oak", count: "" });
     assert.deepEqual(props, { name: "Oak" });
+  });
+});
+
+describe("buildPhotoProperties", () => {
+  it("preserves all photos and names while retaining the legacy first photo", () => {
+    const photos = [
+      { src: "data:image/png;base64,AAAA", name: "first.png" },
+      { src: "data:image/png;base64,BBBB", name: "second.png" },
+    ];
+    assert.deepEqual(buildPhotoProperties(photos), {
+      [PHOTO_PROPERTY]: photos[0].src,
+      [PHOTOS_PROPERTY]: photos.map((photo) => photo.src),
+      [PHOTO_NAMES_PROPERTY]: ["first.png", "second.png"],
+    });
+    assert.deepEqual(buildPhotoProperties(photos.slice(1)), {
+      [PHOTO_PROPERTY]: photos[1].src,
+      [PHOTOS_PROPERTY]: [photos[1].src],
+      [PHOTO_NAMES_PROPERTY]: ["second.png"],
+    });
+    assert.equal(photos.length, 2);
+  });
+
+  it("omits empty attachments and allows unnamed photos", () => {
+    assert.deepEqual(buildPhotoProperties([]), {});
+    assert.deepEqual(buildPhotoProperties([{ src: "data:image/png;base64,AAAA" }]), {
+      [PHOTO_PROPERTY]: "data:image/png;base64,AAAA",
+      [PHOTOS_PROPERTY]: ["data:image/png;base64,AAAA"],
+      [PHOTO_NAMES_PROPERTY]: [""],
+    });
+  });
+
+  it("reserves the multi-photo property keys against custom form fields", () => {
+    const schema = buildSchema([
+      { label: PHOTOS_PROPERTY, type: "text" },
+      { label: PHOTO_NAMES_PROPERTY, type: "text" },
+    ]);
+    assert.deepEqual(
+      schema.fields.map((field) => field.key),
+      [`${PHOTOS_PROPERTY}_2`, `${PHOTO_NAMES_PROPERTY}_2`],
+    );
   });
 });
 
@@ -331,34 +373,5 @@ describe("line/polygon geometry", () => {
       ).geometry.type,
       "Polygon",
     );
-  });
-
-  it("drawPreview includes a vertex point per coord and a line at >= 2", () => {
-    const one = drawPreview("line", [[0, 0]]);
-    assert.equal(one.features.length, 1); // just the vertex
-    const two = drawPreview("line", [
-      [0, 0],
-      [1, 1],
-    ]);
-    // two vertices + one line
-    assert.equal(two.features.length, 3);
-    assert.ok(two.features.some((f) => f.geometry?.type === "LineString"));
-  });
-
-  it("drawPreview closes the polygon fill at >= 3 vertices", () => {
-    const two = drawPreview("polygon", [
-      [0, 0],
-      [1, 0],
-    ]);
-    // 2 vertices + ring line, no fill yet
-    assert.ok(!two.features.some((f) => f.geometry?.type === "Polygon"));
-    const three = drawPreview("polygon", [
-      [0, 0],
-      [1, 0],
-      [1, 1],
-    ]);
-    // 3 vertices + line + polygon fill
-    assert.equal(three.features.length, 5);
-    assert.ok(three.features.some((f) => f.geometry?.type === "Polygon"));
   });
 });

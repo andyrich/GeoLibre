@@ -41,7 +41,7 @@ file contents do not change.
 | `widgets`         | array   | Optional Dashboard panel chart widgets (see below); omitted when there are none                              |
 | `dashboardColumns`| number  | Optional Dashboard widget-grid column count (1-6, default 2); omitted when default                          |
 | `styleLibrary`    | array   | Optional project-scoped Style Manager entries (name, tags, kind, `LayerStyle` subset); omitted when empty    |
-| `primaryRenderer` | string  | Optional engine for the primary map area: `"maplibre"` (2D, the default) or `"cesium"` (3D globe); omitted when default |
+| `primaryRenderer` | string  | Optional engine for the primary map area: `"maplibre"` (2D, the default), `"mapbox"` (Mapbox GL JS), `"arcgis"` (ArcGIS Maps SDK for JavaScript) or `"cesium"` (3D globe); omitted when default |
 | `metadata`        | object  | Free-form project metadata                                                                                   |
 
 ## Plugin state
@@ -402,11 +402,33 @@ comparing the leading `YYYY-MM-DD` of ISO text), `epochMs`, or `epochS` — and
 A control with nothing chosen places no constraint, so an emptied selection
 shows every feature rather than none.
 
-A quick filter narrows the *rendered* features, so a point layer using the
-cluster renderer is an exception worth noting: MapLibre clusters at the source,
-from the layer's whole dataset, so cluster bubbles and their counts describe the
-unfiltered data while clustering is on (as they already do for a Time Slider
-window or a rule filter).
+A vector layer may also carry a persistent boolean MapLibre expression filter.
+This is authored from **Select by Expression → Filter layer** and hides
+non-matching features without changing or copying the source data:
+
+```json
+{
+  "filterExpression": [">=", ["get", "population"], 100000]
+}
+```
+
+The expression is saved with the project and remains active until it is cleared
+from the Select by Expression panel or from the layer's **Clear filters** action.
+It combines with Quick Filters and the transient filters described below.
+
+What is stored is a plain MapLibre expression, so the Expression Builder's `@`
+variables (`@project_name`, `@layer_name`, `@feature_count`, `@map_zoom`,
+`@map_scale`) are resolved to literal values at the moment the filter is
+applied and do not track the map afterwards. Use the MapLibre `["zoom"]`
+operator instead when the filter should follow the current zoom.
+
+A point layer using the cluster renderer is worth noting, because MapLibre
+clusters at the source, before the renderer evaluates any filter. GeoLibre
+therefore narrows a clustered layer's source data by the persistent expression
+filter and Quick Filters, so its bubbles and counts follow both. A Time Slider
+window, a rule filter, and an embed `setFilter` remain per-feature render
+filters and cannot change an already-built cluster, so counts stay unnarrowed by
+those while clustering is on.
 
 The compiled filter is combined with the transient `timeFilter` and
 `embedFilter` and with the rule-based renderer's hide-unmatched filter under a
@@ -433,6 +455,8 @@ popup, and whether a hover tooltip follows the pointer:
     "hover": true,
     "titleField": "name",
     "showFeatureId": false,
+    "maxWidth": 640,
+    "imageHeight": 420,
     "fields": [
       {
         "field": "pop_max",
@@ -461,6 +485,14 @@ inline `data:image/*;base64` values as thumbnails), `text`, `number`, `date`,
 `linkLabel`. `hover: true` on a field puts it in the tooltip's short subset; a
 tooltip with no flagged field shows the title alone, or nothing when the title
 is just the layer name.
+
+`maxWidth` (288-1200) is how wide the click popup may draw and `imageHeight`
+(40-1200) how tall an `image` field's thumbnail may draw inside it, both in CSS
+pixels; each is clamped to its range and `maxWidth` is capped by the viewport
+besides, so neither can produce a popup that blankets the map. Absent, the
+popup keeps its default width and image height. A thumbnail keeps its aspect
+ratio, so `imageHeight` alone does little for a landscape photo without
+`maxWidth` to match.
 
 `titleField` leads the popup with a feature's own value instead of the layer
 name; `titleExpression` (a MapLibre expression source) wins over it, and both

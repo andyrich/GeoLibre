@@ -46,6 +46,7 @@ import {
   mapBodyAspectRatio,
   PAPER_SIZES,
   resolvePageSize,
+  scaleZoomTarget,
   type BodyCorner,
   type CustomSize,
   type LayoutOptions,
@@ -91,6 +92,7 @@ import {
   exportAtlasPngZip,
   exportLayoutPdf,
   exportLayoutPng,
+  exportLayoutSvg,
   legendEditorRows,
   reorderLegendEntry,
   setLegendItemLabel,
@@ -117,6 +119,9 @@ import {
   type AtlasTokenContext,
 } from "../../lib/print-atlas";
 import { clearAtlasFeatureMask, showAtlasFeatureMask } from "../../lib/print-atlas-mask";
+import { engineStyleMap } from "../../lib/engine-style-map";
+import { useMapCapabilities } from "../../hooks/useMapCapabilities";
+import { clamp } from "../../lib/clamp";
 
 interface PrintLayoutDialogProps {
   open: boolean;
@@ -175,7 +180,7 @@ function ToggleField({ id, label, checked, disabled, onChange }: ToggleFieldProp
 /**
  * Print Layout composer dialog: captures the current map view and composes it
  * with a title, legend, scale bar, north arrow, and footer onto a chosen paper
- * or screen size, then exports the result to PNG or PDF.
+ * or screen size, then exports the result to PNG, PDF, or SVG.
  */
 export function PrintLayoutDialog({
   open,
@@ -190,6 +195,11 @@ export function PrintLayoutDialog({
   // Follow the map's scale-bar unit preference so the printed bar matches the
   // on-screen one (metric / imperial / nautical).
   const scaleUnit = useAppStore((s) => s.preferences.map.scaleUnit);
+  // The project's zoom limits. An engine without a MapLibre map exposes none of
+  // its own, but `applyMapPreferences` feeds it these (clamped to [0, 24], the
+  // range every engine accepts), so they are what its camera can reach.
+  const prefMinZoom = useAppStore((s) => s.preferences.map.minZoom);
+  const prefMaxZoom = useAppStore((s) => s.preferences.map.maxZoom);
   const setPrintLayout = useAppStore((s) => s.setPrintLayout);
   // The composer's settings belong to the project, so the controls start from
   // what it was saved with. Read once per mount: the dialog is remounted on
@@ -349,7 +359,10 @@ export function PrintLayoutDialog({
   // Atlas / map series: one page per coverage-layer feature (GH #1291).
   const renderer = useAppStore((state) => state.primaryRenderer);
   const [atlasEnabledSetting, setAtlasEnabled] = useState(initialLayout.atlasEnabled);
-  const atlasEnabled = atlasEnabledSetting && renderer === "maplibre";
+  // Atlas drives the live 2D camera (fitBounds with padding, idle, the
+  // coverage mask), which every Style Spec engine shares; the globes have none.
+  const atlasRendererSupported = useMapCapabilities(mapControllerRef).styleSpec;
+  const atlasEnabled = atlasEnabledSetting && atlasRendererSupported;
   const [atlasLayerId, setAtlasLayerId] = useState(initialLayout.atlasLayerId);
   // Coverage strategy: one page per feature, or pages tiling the layer's line
   // features in fixed-length stretches (GH #1291 follow-up).
@@ -713,10 +726,10 @@ export function PrintLayoutDialog({
       captureRequest.current++;
       // Closing for good (not to draw): take the extent box off the map.
       showEnginePreview(null);
-      if (map) {
-        clearPrintExtent(map);
-        clearAtlasFeatureMask(map);
-      }
+      if (map) clearPrintExtent(map);
+      // The atlas mask is drawn on either 2D engine; see captureAtlasPage.
+      const styleMap = engineStyleMap(mapControllerRef.current);
+      if (styleMap) clearAtlasFeatureMask(styleMap);
     }
     wasOpenRef.current = open;
   }, [open, recapture, mapControllerRef, extentBbox, showEnginePreview]);
@@ -739,6 +752,8 @@ export function PrintLayoutDialog({
       }
       enginePreviewRef.current?.();
       enginePreviewRef.current = null;
+      // An atlas capture still in flight must not bring the preview back.
+      wasOpenRef.current = false;
       const map = mapControllerRef.current?.getMap();
       if (map) {
         if (idleRecaptureRef.current) {
@@ -746,8 +761,9 @@ export function PrintLayoutDialog({
           idleRecaptureRef.current = null;
         }
         clearPrintExtent(map);
-        clearAtlasFeatureMask(map);
       }
+      const styleMap = engineStyleMap(mapControllerRef.current);
+      if (styleMap) clearAtlasFeatureMask(styleMap);
     },
     [mapControllerRef],
   );
@@ -1169,7 +1185,7 @@ export function PrintLayoutDialog({
   // camera drive that may never happen.
   useEffect(() => {
     if (open && atlasActive && atlasMaskEnabled && atlasMaskAvailable) return;
-    const map = mapControllerRef.current?.getMap();
+    const map = engineStyleMap(mapControllerRef.current);
     if (map) clearAtlasFeatureMask(map);
   }, [open, atlasActive, atlasMaskEnabled, atlasMaskAvailable, mapControllerRef]);
   const atlasFilterValid = atlasFilterPredicate !== null;
@@ -1481,8 +1497,11 @@ export function PrintLayoutDialog({
       viewBounds: AtlasBounds;
       mapFit: "cover" | "contain";
     }> => {
-      const map = mapControllerRef.current?.getMap();
-      if (!map) throw new Error("Map is not ready");
+      // Atlas drives the live camera, so it runs on either 2D engine through
+      // the surface MapLibre and mapbox-gl share (see engineStyleMap).
+      const engine = mapControllerRef.current;
+      const map = engineStyleMap(engine);
+      if (!engine || !map) throw new Error("Map is not ready");
       const ctx: AtlasTokenContext = {
         name: page.name,
         pageNumber: page.index + 1,
@@ -1497,7 +1516,15 @@ export function PrintLayoutDialog({
       };
       const containMap = Boolean(map.getLayer(GRATICULE_LABEL_LAYER_ID));
       const canvas = map.getCanvas();
-      const mapPixelRatio = map.getPixelRatio();
+      // mapbox-gl has no getPixelRatio; the canvas carries the same ratio.
+      // An unlaid-out canvas (clientWidth 0) has no ratio to read, so fall
+      // back to the device's.
+      const mapPixelRatio =
+        typeof map.getPixelRatio === "function"
+          ? map.getPixelRatio()
+          : canvas.clientWidth > 0
+            ? canvas.width / canvas.clientWidth
+            : window.devicePixelRatio || 1;
       const cssPixelRatio = Number.isFinite(mapPixelRatio) && mapPixelRatio > 0 ? mapPixelRatio : 1;
       const viewportWidth = canvas.clientWidth || canvas.width / cssPixelRatio;
       const viewportHeight = canvas.clientHeight || canvas.height / cssPixelRatio;
@@ -1511,6 +1538,7 @@ export function PrintLayoutDialog({
           map,
           coverageFeature,
           containMap ? GRATICULE_LABEL_LAYER_ID : undefined,
+          { mapbox: engine.kind === "mapbox" },
         );
       } else {
         clearAtlasFeatureMask(map);
@@ -1531,15 +1559,31 @@ export function PrintLayoutDialog({
       setMapFit(atlasMapFit);
       // Hide the drawn print-extent box while reading the buffer, as recapture
       // does, so its outline is never baked into a page.
-      const capture = () => {
-        setPrintExtentVisible(map, false);
+      const nativeMap = engine.getMap();
+      const capture = async () => {
+        if (!nativeMap) {
+          // Another engine draws the box as its own preview; capture through
+          // the engine, as recapture does there.
+          showEnginePreview(null);
+          try {
+            return await captureEngineMapImage(engine, null);
+          } finally {
+            // The drawn box stays on the map as a reference in either capture
+            // mode, as the MapLibre branch and recapture restore it, but only
+            // on this dialog's engine: a capture that outlived a close or a
+            // renderer change must not draw on whatever replaced it.
+            if (wasOpenRef.current && mapControllerRef.current === engine)
+              showEnginePreview(extentBbox);
+          }
+        }
+        setPrintExtentVisible(nativeMap, false);
         try {
-          return captureMapImage(map, null);
+          return captureMapImage(nativeMap, null);
         } finally {
-          setPrintExtentVisible(map, true);
+          setPrintExtentVisible(nativeMap, true);
         }
       };
-      let cap = capture();
+      let cap = await capture();
       if (atlasExtentMode === "scale") {
         const target = Number(atlasScale);
         // Measure against the page's substituted text, not the raw templates:
@@ -1567,7 +1611,7 @@ export function PrintLayoutDialog({
           if (Math.abs(clamped - map.getZoom()) > 1e-3) {
             map.setZoom(clamped);
             await waitForAtlasSettle(map);
-            cap = capture();
+            cap = await capture();
           }
         }
       } else {
@@ -1596,6 +1640,8 @@ export function PrintLayoutDialog({
     },
     [
       mapControllerRef,
+      extentBbox,
+      showEnginePreview,
       atlasExtentMode,
       atlasFitMarginPct,
       atlasScale,
@@ -1740,29 +1786,43 @@ export function PrintLayoutDialog({
     (targetRatio: number) => {
       const engine = mapControllerRef.current;
       const map = engine?.getMap();
-      if (engine && !map && captureMode !== "extent" && targetRatio > 0 && currentRatio > 0) {
-        engine.flyTo({
-          zoom: engine.readView().zoom + Math.log2(currentRatio / targetRatio),
-          duration: 0,
-        });
+      if (engine && !map && captureMode !== "extent") {
+        // `applyMapPreferences` feeds a non-MapLibre engine the project's zoom
+        // limits (clamped to [0, 24], the range every engine accepts), so those
+        // are what this camera can reach.
+        const target = scaleZoomTarget(
+          engine.readView().zoom,
+          currentRatio,
+          targetRatio,
+          clamp(prefMinZoom, 0, 24),
+          clamp(prefMaxZoom, 0, 24),
+        );
+        if (!target) return;
+        // A scale the camera cannot reach is applied partially, so say so rather
+        // than letting the value snap back unexplained — the same contract the
+        // MapLibre branch below has had since GH #743.
+        setScaleNotice(target.clamped ? t("printLayout.errors.scaleOutOfRange") : null);
+        // Already there (or clamped to where it is): recapture without moving,
+        // so the reported scale still refreshes.
+        if (!target.unchanged) engine.flyTo({ zoom: target.zoom, duration: 0 });
         void recapture(null);
         return;
       }
-      if (captureMode === "extent" || !map || !(targetRatio > 0) || !(currentRatio > 0)) {
-        return;
-      }
-      const newZoom = map.getZoom() + Math.log2(currentRatio / targetRatio);
-      // Clamp to the map's own zoom limits (not a fixed 0–24) so the out-of-range
-      // notice reflects what this map can actually reach.
-      const minZoom = map.getMinZoom();
-      const maxZoom = map.getMaxZoom();
-      const clampedZoom = Math.max(minZoom, Math.min(maxZoom, newZoom));
+      if (captureMode === "extent" || !map) return;
+      // The map's own zoom limits (not a fixed 0–24), so the out-of-range notice
+      // reflects what this map can actually reach.
+      const target = scaleZoomTarget(
+        map.getZoom(),
+        currentRatio,
+        targetRatio,
+        map.getMinZoom(),
+        map.getMaxZoom(),
+      );
+      if (!target) return;
       // The requested scale needs a zoom past the map's limits, so it can only be
       // applied partially: surface that instead of letting the value snap back
       // with no explanation (GH #743). A reachable scale clears the notice.
-      setScaleNotice(
-        Math.abs(clampedZoom - newZoom) > 1e-3 ? t("printLayout.errors.scaleOutOfRange") : null,
-      );
+      setScaleNotice(target.clamped ? t("printLayout.errors.scaleOutOfRange") : null);
       // Drop a still-pending idle handler / fallback timer from a prior applyScale
       // before registering new ones, so two quick scale changes don't both fire.
       if (idleRecaptureRef.current) {
@@ -1776,11 +1836,11 @@ export function PrintLayoutDialog({
       // No effective zoom change (already at target, or clamped): MapLibre won't
       // emit an "idle", so recapture directly rather than registering a handler
       // that would never fire and could later fire on an unrelated render.
-      if (Math.abs(clampedZoom - map.getZoom()) < 1e-6) {
+      if (target.unchanged) {
         recapture(null);
         return;
       }
-      map.setZoom(clampedZoom);
+      map.setZoom(target.zoom);
       // Recapture once the map is idle, so tiles for the new zoom have finished
       // loading and the snapshot is not blurry/blank mid-fetch. applyScale only
       // runs in viewport mode, so pin the recapture to a null clip. Use map.on
@@ -1811,7 +1871,7 @@ export function PrintLayoutDialog({
         }
       }, 1500);
     },
-    [mapControllerRef, captureMode, currentRatio, recapture, t],
+    [mapControllerRef, captureMode, currentRatio, prefMaxZoom, prefMinZoom, recapture, t],
   );
 
   // Hide the dialog so the map is interactive, let the user drag an extent box,
@@ -1970,7 +2030,7 @@ export function PrintLayoutDialog({
     }
   };
 
-  const handleExport = async (kind: "png" | "pdf") => {
+  const handleExport = async (kind: "png" | "pdf" | "svg") => {
     if (!captured) {
       setError(t("printLayout.errors.captureFirst"));
       return;
@@ -1981,6 +2041,8 @@ export function PrintLayoutDialog({
       const base = sanitizeFilename(displayOptions.title || projectName || "map-layout");
       if (kind === "png") {
         await exportLayoutPng(displayOptions, `${base}.png`);
+      } else if (kind === "svg") {
+        await exportLayoutSvg(displayOptions, `${base}.svg`);
       } else {
         await exportLayoutPdf(displayOptions, `${base}.pdf`);
       }
@@ -2427,7 +2489,7 @@ export function PrintLayoutDialog({
                 id="atlas-enabled"
                 label={t("printLayout.atlas.enable")}
                 checked={atlasEnabled}
-                disabled={atlasBusy || renderer !== "maplibre"}
+                disabled={atlasBusy || !atlasRendererSupported}
                 onChange={(next) => {
                   setAtlasEnabled(next);
                   // Start the series from its first page on (re-)enable.
@@ -3656,7 +3718,7 @@ export function PrintLayoutDialog({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
           {/* Atlas export progress, kept visible next to the buttons. */}
           {atlasProgress && (
             <span className="me-auto text-sm text-muted-foreground">
@@ -3686,6 +3748,16 @@ export function PrintLayoutDialog({
             )}
             {copied ? t("printLayout.copied") : t("printLayout.copyToClipboard")}
           </Button>
+          {!atlasEnabled && (
+            <Button
+              variant="outline"
+              disabled={exporting || atlasBusy || !captured}
+              onClick={() => void handleExport("svg")}
+            >
+              <FileImage className="me-2 h-4 w-4" />
+              {t("printLayout.exportSvg")}
+            </Button>
+          )}
           {/* Equal-weight export buttons: neither format is the "primary" one
               (GH #520). In atlas mode they become the whole-series exports:
               a zip of per-page PNGs and one multi-page PDF (GH #1291). */}
