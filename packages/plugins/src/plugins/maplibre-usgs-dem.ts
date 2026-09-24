@@ -1,5 +1,5 @@
 /**
- * USGS 3DEP Elevation / DEM Explorer plugin (Plugins > Web Services > USGS Elevation (DEM)).
+ * USGS 3DEP Elevation / DEM Explorer plugin (Plugins > Web Services > USGS 3Dep Data Loader).
  *
  * Allows users to search, visualize footprints, download, and load digital elevation
  * models (1m DEM, 1/3 arc-second, 1 arc-second, Alaska 5m, etc.) directly from
@@ -85,7 +85,7 @@ export interface UsgsDemLabels {
 }
 
 export const DEFAULT_USGS_DEM_LABELS: UsgsDemLabels = {
-  title: "USGS Elevation (DEM)",
+  title: "USGS 3Dep Data Loader",
   hint: "Query and load USGS 3DEP Digital Elevation Models onto the map.",
   search: "Search DEMs",
   searching: "Searching USGS API...",
@@ -907,7 +907,7 @@ function onMapMouseLeave(e: MapLayerMouseEvent): void {
  */
 export const maplibreUsgsDemPlugin: GeoLibrePlugin = {
   id: USGS_DEM_PLUGIN_ID,
-  name: "USGS Elevation (DEM)",
+  name: "USGS 3Dep Data Loader",
   version: "1.0.0",
   description: "Explore, download, and load USGS 3DEP Digital Elevation Models onto the map.",
   author: "GeoLibre",
