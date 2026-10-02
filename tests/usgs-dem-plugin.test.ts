@@ -117,4 +117,38 @@ describe("USGS 3DEP built-in plugin", () => {
       maplibreUsgsDemPlugin.deactivate?.(mockApp);
     }
   });
+
+  it("shows example coordinates as placeholders and keeps typed input across a relabel", () => {
+    let panelOptions: GeoLibreRightPanelRegistration | null = null;
+    const mockApp = {
+      registerRightPanel: (opts: GeoLibreRightPanelRegistration) => {
+        panelOptions = opts;
+        return () => {};
+      },
+    } as unknown as GeoLibreAppAPI;
+    maplibreUsgsDemPlugin.activate(mockApp);
+    const container = document.createElement("div");
+    const cleanup = panelOptions?.render(container);
+    try {
+      const coordsTab = [...container.querySelectorAll("button")].find(
+        (b) => b.textContent === DEFAULT_USGS_DEM_LABELS.modeBbox,
+      );
+      assert.ok(coordsTab);
+      coordsTab.click();
+      const west = container.querySelector("input[type=text]") as HTMLInputElement;
+      assert.equal(west.value, "");
+      assert.equal(west.placeholder, "-122.5");
+      west.value = "-120";
+      west.dispatchEvent(new (window.Event as typeof Event)("input"));
+
+      setUsgsDemLabels({ title: "Relabeled" });
+      const remounted = container.querySelector("input[type=text]") as HTMLInputElement;
+      assert.notEqual(remounted, west);
+      assert.equal(remounted.value, "-120");
+    } finally {
+      setUsgsDemLabels(DEFAULT_USGS_DEM_LABELS);
+      if (typeof cleanup === "function") cleanup();
+      maplibreUsgsDemPlugin.deactivate?.(mockApp);
+    }
+  });
 });

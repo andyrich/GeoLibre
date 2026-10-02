@@ -146,6 +146,37 @@ let disposePanel: (() => void) | null = null;
 let onFootprintSelect: ((id: string) => void) | null = null;
 let footprintsRegistered = false;
 
+// Search state lives at module scope so a relabel (setUsgsDemLabels on a
+// language change remounts the panel) keeps the user's results and selections.
+// deactivate() resets it via resetPanelState().
+const DEFAULT_DATASETS = [
+  "Digital Elevation Model (DEM) 1 meter",
+  "National Elevation Dataset (NED) 1/3 arc-second",
+  "National Elevation Dataset (NED) 1 arc-second",
+];
+let mode: SearchMode = "view";
+let drawnBbox: [number, number, number, number] | null = null;
+let results: UsgsDemItem[] = [];
+let totalFound = 0;
+let selectedId: string | null = null;
+const selectedDatasets = new Set<string>(DEFAULT_DATASETS);
+let selectedFormat = "GeoTIFF";
+let filterRedundant = true;
+const inputValues = new Map<string, string>();
+
+function resetPanelState(): void {
+  mode = "view";
+  drawnBbox = null;
+  results = [];
+  totalFound = 0;
+  selectedId = null;
+  selectedDatasets.clear();
+  for (const name of DEFAULT_DATASETS) selectedDatasets.add(name);
+  selectedFormat = "GeoTIFF";
+  filterRedundant = true;
+  inputValues.clear();
+}
+
 function normalizeLon(lon: number): number {
   return ((((lon + 180) % 360) + 360) % 360) - 180;
 }
@@ -346,29 +377,14 @@ function mountPanel(container: HTMLElement): () => void {
   container.style.cssText =
     "display:flex;flex-direction:column;gap:8px;padding:12px;height:100%;box-sizing:border-box;font-family:inherit;font-size:12px;color:hsl(var(--foreground));overflow-y:auto;";
 
-  // State
-  let mode: SearchMode = "view";
-  let drawnBbox: [number, number, number, number] | null = null;
+  // Per-mount state (search state is module-level, above)
   let isDrawing = false;
-  let results: UsgsDemItem[] = [];
-  let totalFound = 0;
   let isLoading = false;
-  let selectedId: string | null = null;
   let activeAddId: string | null = null;
   // Set when this panel instance is torn down (a label change remounts it), so
   // an in-flight search neither paints stale footprints nor writes to detached DOM.
   let disposed = false;
   let searchAbort: AbortController | null = null;
-
-  // Selected datasets
-  const selectedDatasets = new Set<string>([
-    "Digital Elevation Model (DEM) 1 meter",
-    "National Elevation Dataset (NED) 1/3 arc-second",
-    "National Elevation Dataset (NED) 1 arc-second",
-  ]);
-
-  let selectedFormat = "GeoTIFF";
-  let filterRedundant = true;
 
   // Header
   const header = document.createElement("div");
@@ -421,10 +437,10 @@ function mountPanel(container: HTMLElement): () => void {
   // Manual Bbox inputs
   const bboxInputs = document.createElement("div");
   bboxInputs.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:4px;";
-  const westIn = createInput(currentLabels.coordWest, "-122.5");
-  const southIn = createInput(currentLabels.coordSouth, "46.1");
-  const eastIn = createInput(currentLabels.coordEast, "-122.1");
-  const northIn = createInput(currentLabels.coordNorth, "46.3");
+  const westIn = createInput(currentLabels.coordWest, "-122.5", "west");
+  const southIn = createInput(currentLabels.coordSouth, "46.1", "south");
+  const eastIn = createInput(currentLabels.coordEast, "-122.1", "east");
+  const northIn = createInput(currentLabels.coordNorth, "46.3", "north");
   bboxInputs.appendChild(westIn.wrapper);
   bboxInputs.appendChild(southIn.wrapper);
   bboxInputs.appendChild(eastIn.wrapper);
@@ -433,8 +449,8 @@ function mountPanel(container: HTMLElement): () => void {
   // 24K Quad inputs
   const quadInputs = document.createElement("div");
   quadInputs.style.cssText = "display:flex;flex-direction:column;gap:4px;";
-  const quadIn = createInput(currentLabels.quadName, "Mount St. Helens");
-  const stateIn = createInput(currentLabels.stateName, "WA");
+  const quadIn = createInput(currentLabels.quadName, "Mount St. Helens", "quad");
+  const stateIn = createInput(currentLabels.stateName, "WA", "state");
   quadInputs.appendChild(quadIn.wrapper);
   quadInputs.appendChild(stateIn.wrapper);
 
@@ -448,7 +464,9 @@ function mountPanel(container: HTMLElement): () => void {
   drawBtn.textContent = currentLabels.drawStart;
   const drawStatus = document.createElement("div");
   drawStatus.style.cssText = "font-size:10px;color:hsl(var(--muted-foreground));";
-  drawStatus.textContent = currentLabels.drawHint;
+  drawStatus.textContent = drawnBbox
+    ? currentLabels.drawnBox(formatBbox(drawnBbox))
+    : currentLabels.drawHint;
   drawControls.appendChild(drawBtn);
   drawControls.appendChild(drawStatus);
 
@@ -778,6 +796,17 @@ function mountPanel(container: HTMLElement): () => void {
     } catch (err) {
       if (disposed) return;
       const message = err instanceof Error ? err.message : String(err);
+      // Drop the previous results so the list, Export button, and footprints
+      // don't keep showing a search the user just replaced.
+      results = [];
+      totalFound = 0;
+      selectedId = null;
+      const map = appRef?.getMap?.();
+      if (map) {
+        updateFootprintSource(map, footprintCollection([]));
+        setSelectedFootprint(map, null);
+      }
+      renderResults();
       resultStatus.textContent = currentLabels.searchError(message);
     } finally {
       if (searchAbort === abort) searchAbort = null;
@@ -910,7 +939,8 @@ function mountPanel(container: HTMLElement): () => void {
     });
   }
 
-  setMode("view");
+  setMode(mode);
+  if (results.length > 0) renderResults();
 
   return () => {
     disposed = true;
@@ -923,6 +953,7 @@ function mountPanel(container: HTMLElement): () => void {
 function createInput(
   label: string,
   placeholder: string,
+  key: string,
 ): { wrapper: HTMLElement; input: HTMLInputElement } {
   const wrapper = document.createElement("div");
   wrapper.style.cssText = "display:flex;flex-direction:column;gap:2px;";
@@ -931,7 +962,9 @@ function createInput(
   lbl.textContent = label;
   const input = document.createElement("input");
   input.type = "text";
-  input.value = placeholder;
+  input.placeholder = placeholder;
+  input.value = inputValues.get(key) ?? "";
+  input.oninput = () => inputValues.set(key, input.value);
   input.style.cssText =
     "padding:4px 6px;border-radius:4px;border:1px solid hsl(var(--border));background:hsl(var(--background));color:hsl(var(--foreground));font-size:11px;box-sizing:border-box;";
   wrapper.appendChild(lbl);
@@ -1018,6 +1051,7 @@ export const maplibreUsgsDemPlugin: GeoLibrePlugin = {
       app.unregisterExternalNativeLayer(FOOTPRINT_STORE_LAYER_ID);
       footprintsRegistered = false;
     }
+    resetPanelState();
     appRef = null;
   },
 };
