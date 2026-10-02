@@ -6,7 +6,7 @@
  * USGS The National Map API services onto the GeoLibre display.
  */
 
-import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
+import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type {
   GeoJSONSource,
   LngLat,
@@ -145,7 +145,6 @@ let panelContainer: HTMLElement | null = null;
 let disposePanel: (() => void) | null = null;
 let onFootprintSelect: ((id: string) => void) | null = null;
 let footprintsRegistered = false;
-const footprintById = new Map<string, Feature<Polygon | MultiPolygon, UsgsDemFootprintProps>>();
 
 function normalizeLon(lon: number): number {
   return ((((lon + 180) % 360) + 360) % 360) - 180;
@@ -292,6 +291,10 @@ function updateFootprintSource(
       sourceIds: [FOOTPRINT_SOURCE_ID],
       metadata: { sourceKind: "usgs-dem-footprints", externalNativeLayer: true },
     });
+  } else if (footprintsRegistered && fc.features.length === 0) {
+    // An empty search clears the map source, so drop the Layers-panel entry too.
+    footprintsRegistered = false;
+    appRef?.unregisterExternalNativeLayer?.(FOOTPRINT_STORE_LAYER_ID);
   }
 }
 
@@ -549,6 +552,8 @@ function mountPanel(container: HTMLElement): () => void {
   container.appendChild(resultsList);
 
   function setMode(newMode: SearchMode) {
+    // Leaving Draw hides its Cancel button, so end any draw in progress here.
+    if (newMode !== "draw" && isDrawing) stopDrawing();
     mode = newMode;
     modeButtons.forEach((btn, id) => {
       if (id === mode) {

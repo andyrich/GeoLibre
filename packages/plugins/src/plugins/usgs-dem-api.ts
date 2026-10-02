@@ -344,10 +344,16 @@ export function parseSearchResponse(
     let bbox: [number, number, number, number] | null = null;
     const boundingBox = item.boundingBox as Record<string, unknown> | undefined;
     if (boundingBox) {
-      const minX = Number(boundingBox.minX ?? boundingBox.west);
-      const minY = Number(boundingBox.minY ?? boundingBox.south);
-      const maxX = Number(boundingBox.maxX ?? boundingBox.east);
-      const maxY = Number(boundingBox.maxY ?? boundingBox.north);
+      // Number(null) and Number("") are 0, so only numbers and non-blank
+      // strings count as coordinates.
+      const coord = (value: unknown): number =>
+        typeof value === "number" || (typeof value === "string" && value.trim() !== "")
+          ? Number(value)
+          : NaN;
+      const minX = coord(boundingBox.minX ?? boundingBox.west);
+      const minY = coord(boundingBox.minY ?? boundingBox.south);
+      const maxX = coord(boundingBox.maxX ?? boundingBox.east);
+      const maxY = coord(boundingBox.maxY ?? boundingBox.north);
       if (
         Number.isFinite(minX) &&
         Number.isFinite(minY) &&

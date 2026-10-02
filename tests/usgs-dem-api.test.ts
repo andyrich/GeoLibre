@@ -286,6 +286,17 @@ describe("footprintFeature & footprintCollection", () => {
     assert.equal(footprintCollection([item]).features.length, 0);
   });
 
+  it("treats a partial boundingBox with null or blank coordinates as unknown", () => {
+    for (const minX of [null, ""]) {
+      const raw = rawDemItem({
+        boundingBox: { minX, minY: 46.125, maxX: -122.125, maxY: 46.25 },
+      });
+      const item = parseSearchResponse({ items: [raw] }).items[0];
+      assert.ok(item);
+      assert.equal(item.bbox, null);
+    }
+  });
+
   it("derives a stable id from the download URL when the API gives none", () => {
     const raw = rawDemItem({ sourceId: undefined, id: undefined, metaUrl: undefined });
     const first = parseSearchResponse({ items: [raw] }).items[0];
