@@ -22,9 +22,11 @@ function rawDemItem(overrides: Record<string, unknown> = {}) {
     title: "USGS 1 meter x56y478 WA Mount St Helens 2020",
     datasetName: "Digital Elevation Model (DEM) 1 meter",
     format: "GeoTIFF",
-    downloadURL: "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/WA/dem123.tif",
+    downloadURL:
+      "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/WA/dem123.tif",
     metaUrl: "https://data.usgs.gov/metadata/dem123.xml",
-    previewUrl: "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/WA/dem123.jpg",
+    previewUrl:
+      "https://prd-tnm.s3.amazonaws.com/StagedProducts/Elevation/1m/Projects/WA/dem123.jpg",
     sizeInBytes: 154857600,
     prettyFileSize: "147.69 MB",
     publicationDate: "2021-04-15T00:00:00.000Z",

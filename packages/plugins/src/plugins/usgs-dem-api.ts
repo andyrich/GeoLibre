@@ -36,7 +36,8 @@ export const USGS_DEM_DATASETS: readonly UsgsDemDatasetInfo[] = [
     id: "ned-1-3",
     name: "National Elevation Dataset (NED) 1/3 arc-second",
     resolution: "1/3 arc-second (~10 meters)",
-    description: "Standard seamless elevation dataset for the contiguous United States, Hawaii, and parts of Alaska.",
+    description:
+      "Standard seamless elevation dataset for the contiguous United States, Hawaii, and parts of Alaska.",
   },
   {
     id: "ned-1",
@@ -210,10 +211,15 @@ export function filterRedundantDemItems(items: UsgsDemItem[]): UsgsDemItem[] {
     }
 
     // Keep the one with a newer publication date or GeoTIFF format if preferred
-    const existingDate = existing.publicationDate ? new Date(existing.publicationDate).getTime() : 0;
+    const existingDate = existing.publicationDate
+      ? new Date(existing.publicationDate).getTime()
+      : 0;
     const itemDate = item.publicationDate ? new Date(item.publicationDate).getTime() : 0;
 
-    if (itemDate > existingDate || (!existing.downloadUrl.endsWith(".tif") && item.downloadUrl.endsWith(".tif"))) {
+    if (
+      itemDate > existingDate ||
+      (!existing.downloadUrl.endsWith(".tif") && item.downloadUrl.endsWith(".tif"))
+    ) {
       seen.set(key, item);
     }
   }
@@ -254,7 +260,11 @@ export function buildUsgsDemSearchUrl(options: UsgsDemSearchOptions = {}): strin
   }
 
   // Formats
-  if (options.prodFormats && options.prodFormats.length > 0 && !options.prodFormats.includes("All")) {
+  if (
+    options.prodFormats &&
+    options.prodFormats.length > 0 &&
+    !options.prodFormats.includes("All")
+  ) {
     params.set("prodFormats", options.prodFormats.join(","));
   }
 
@@ -314,7 +324,11 @@ export function parseSearchResponse(
     const format = String(item.format ?? item.prodFormat ?? "GeoTIFF");
     const downloadUrl = String(item.downloadURL ?? item.downloadUrl ?? "");
     const metaUrl = item.metaUrl ? String(item.metaUrl) : null;
-    const previewUrl = item.previewUrl ? String(item.previewUrl) : (item.thumbUrl ? String(item.thumbUrl) : null);
+    const previewUrl = item.previewUrl
+      ? String(item.previewUrl)
+      : item.thumbUrl
+        ? String(item.thumbUrl)
+        : null;
 
     const sizeBytes = typeof item.sizeInBytes === "number" ? item.sizeInBytes : null;
     const prettyFileSize = item.prettyFileSize ? String(item.prettyFileSize) : null;
@@ -330,7 +344,12 @@ export function parseSearchResponse(
       const minY = Number(boundingBox.minY ?? boundingBox.south ?? -90);
       const maxX = Number(boundingBox.maxX ?? boundingBox.east ?? 180);
       const maxY = Number(boundingBox.maxY ?? boundingBox.north ?? 90);
-      if (Number.isFinite(minX) && Number.isFinite(minY) && Number.isFinite(maxX) && Number.isFinite(maxY)) {
+      if (
+        Number.isFinite(minX) &&
+        Number.isFinite(minY) &&
+        Number.isFinite(maxX) &&
+        Number.isFinite(maxY)
+      ) {
         bbox = [minX, minY, maxX, maxY];
       }
     }

@@ -83,7 +83,10 @@ describe("USGS DEM Downloader built-in plugin", () => {
     // Test render container mount
     const container = document.createElement("div");
     const cleanup = panelOptions?.render(container);
-    assert.ok(container.querySelector(".geolibre-usgs-dem-panel") || container.classList.contains("geolibre-usgs-dem-panel"));
+    assert.ok(
+      container.querySelector(".geolibre-usgs-dem-panel") ||
+        container.classList.contains("geolibre-usgs-dem-panel"),
+    );
     if (typeof cleanup === "function") cleanup();
 
     maplibreUsgsDemPlugin.deactivate?.(mockApp);

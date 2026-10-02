@@ -291,7 +291,9 @@ function setSelectedFootprint(map: MapLibreMap, item: UsgsDemItem | null): void 
     return;
   }
   const feat = footprintFeature(item);
-  source.setData(feat ? { type: "FeatureCollection", features: [feat as any] } : emptyFeatureCollection());
+  source.setData(
+    feat ? { type: "FeatureCollection", features: [feat as any] } : emptyFeatureCollection(),
+  );
 }
 
 function downloadDemItem(item: UsgsDemItem): void {
@@ -440,10 +442,12 @@ function mountPanel(container: HTMLElement): () => void {
   datasetSection.appendChild(datasetSummary);
 
   const datasetList = document.createElement("div");
-  datasetList.style.cssText = "display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:140px;overflow-y:auto;";
+  datasetList.style.cssText =
+    "display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:140px;overflow-y:auto;";
   USGS_DEM_DATASETS.forEach((ds) => {
     const label = document.createElement("label");
-    label.style.cssText = "display:flex;align-items:flex-start;gap:6px;font-size:11px;cursor:pointer;";
+    label.style.cssText =
+      "display:flex;align-items:flex-start;gap:6px;font-size:11px;cursor:pointer;";
     const check = document.createElement("input");
     check.type = "checkbox";
     check.checked = selectedDatasets.has(ds.name);
@@ -466,7 +470,8 @@ function mountPanel(container: HTMLElement): () => void {
 
   // Filter options (Format + Deduplication)
   const filterRow = document.createElement("div");
-  filterRow.style.cssText = "display:flex;gap:8px;align-items:center;justify-content:space-between;";
+  filterRow.style.cssText =
+    "display:flex;gap:8px;align-items:center;justify-content:space-between;";
   const formatSelect = document.createElement("select");
   formatSelect.style.cssText =
     "padding:4px 6px;border-radius:4px;border:1px solid hsl(var(--border));background:hsl(var(--background));font-size:11px;";
@@ -482,7 +487,8 @@ function mountPanel(container: HTMLElement): () => void {
   };
 
   const dedupLabel = document.createElement("label");
-  dedupLabel.style.cssText = "display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;";
+  dedupLabel.style.cssText =
+    "display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;";
   const dedupCheck = document.createElement("input");
   dedupCheck.type = "checkbox";
   dedupCheck.checked = filterRedundant;
@@ -521,7 +527,8 @@ function mountPanel(container: HTMLElement): () => void {
 
   // Results List
   const resultsList = document.createElement("div");
-  resultsList.style.cssText = "display:flex;flex-direction:column;gap:6px;flex:1 1 auto;overflow-y:auto;";
+  resultsList.style.cssText =
+    "display:flex;flex-direction:column;gap:6px;flex:1 1 auto;overflow-y:auto;";
   container.appendChild(resultsList);
 
   function setMode(newMode: SearchMode) {
@@ -686,8 +693,15 @@ function mountPanel(container: HTMLElement): () => void {
         const s = parseFloat(southIn.input.value);
         const e = parseFloat(eastIn.input.value);
         const n = parseFloat(northIn.input.value);
-        if (!Number.isFinite(w) || !Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(n)) {
-          throw new Error("Please enter valid numeric coordinates for West, South, East, and North.");
+        if (
+          !Number.isFinite(w) ||
+          !Number.isFinite(s) ||
+          !Number.isFinite(e) ||
+          !Number.isFinite(n)
+        ) {
+          throw new Error(
+            "Please enter valid numeric coordinates for West, South, East, and North.",
+          );
         }
         queryBbox = [w, s, e, n];
       } else if (mode === "quad") {
@@ -774,7 +788,8 @@ function mountPanel(container: HTMLElement): () => void {
 
       // Header row
       const top = document.createElement("div");
-      top.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;gap:4px;";
+      top.style.cssText =
+        "display:flex;justify-content:space-between;align-items:flex-start;gap:4px;";
       const name = document.createElement("div");
       name.style.cssText = "font-weight:600;font-size:11px;line-height:1.3;word-break:break-word;";
       name.textContent = item.title;
@@ -783,7 +798,8 @@ function mountPanel(container: HTMLElement): () => void {
 
       // Meta specs
       const meta = document.createElement("div");
-      meta.style.cssText = "font-size:10px;color:hsl(var(--muted-foreground));display:flex;flex-direction:column;gap:2px;";
+      meta.style.cssText =
+        "font-size:10px;color:hsl(var(--muted-foreground));display:flex;flex-direction:column;gap:2px;";
       const sizeStr = item.prettyFileSize ? ` · ${item.prettyFileSize}` : "";
       const dateStr = item.publicationDate ? ` · ${item.publicationDate.split("T")[0]}` : "";
       meta.textContent = `${item.dataset} (${item.format})${sizeStr}${dateStr}`;
@@ -867,7 +883,10 @@ function mountPanel(container: HTMLElement): () => void {
   };
 }
 
-function createInput(label: string, placeholder: string): { wrapper: HTMLElement; input: HTMLInputElement } {
+function createInput(
+  label: string,
+  placeholder: string,
+): { wrapper: HTMLElement; input: HTMLInputElement } {
   const wrapper = document.createElement("div");
   wrapper.style.cssText = "display:flex;flex-direction:column;gap:2px;";
   const lbl = document.createElement("label");
