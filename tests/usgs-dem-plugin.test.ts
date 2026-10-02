@@ -31,11 +31,11 @@ import { WEB_SERVICE_PLUGIN_IDS } from "../packages/plugins/src/plugins/web-serv
 import { pluginTier } from "../apps/geolibre-desktop/src/lib/ui-profile";
 import type { GeoLibreAppAPI } from "../packages/plugins/src/types";
 
-describe("USGS Elevation (DEM) built-in plugin", () => {
+describe("USGS DEM Downloader built-in plugin", () => {
   it("is registered as an advanced Web Services plugin", () => {
     assert.equal(USGS_DEM_PLUGIN_ID, "maplibre-gl-usgs-dem");
     assert.equal(maplibreUsgsDemPlugin.id, USGS_DEM_PLUGIN_ID);
-    assert.equal(maplibreUsgsDemPlugin.name, "USGS Elevation (DEM)");
+    assert.equal(maplibreUsgsDemPlugin.name, "USGS DEM Downloader");
     assert.ok(WEB_SERVICE_PLUGIN_IDS.includes(USGS_DEM_PLUGIN_ID));
     assert.equal(pluginTier(USGS_DEM_PLUGIN_ID), "advanced");
   });
