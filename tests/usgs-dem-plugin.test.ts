@@ -23,26 +23,27 @@ const installDom = () => {
 installDom();
 
 import {
+  DEFAULT_USGS_DEM_LABELS,
   maplibreUsgsDemPlugin,
   setUsgsDemLabels,
   USGS_DEM_PLUGIN_ID,
 } from "../packages/plugins/src/plugins/maplibre-usgs-dem";
 import { WEB_SERVICE_PLUGIN_IDS } from "../packages/plugins/src/plugins/web-service-sync";
 import { pluginTier } from "../apps/geolibre-desktop/src/lib/ui-profile";
-import type { GeoLibreAppAPI } from "../packages/plugins/src/types";
+import type { GeoLibreAppAPI, GeoLibreRightPanelRegistration } from "../packages/plugins/src/types";
 
-describe("USGS DEM Downloader built-in plugin", () => {
+describe("USGS 3DEP built-in plugin", () => {
   it("is registered as an advanced Web Services plugin", () => {
     assert.equal(USGS_DEM_PLUGIN_ID, "maplibre-gl-usgs-dem");
     assert.equal(maplibreUsgsDemPlugin.id, USGS_DEM_PLUGIN_ID);
-    assert.equal(maplibreUsgsDemPlugin.name, "USGS DEM Downloader");
+    assert.equal(maplibreUsgsDemPlugin.name, "USGS 3DEP");
     assert.ok(WEB_SERVICE_PLUGIN_IDS.includes(USGS_DEM_PLUGIN_ID));
     assert.equal(pluginTier(USGS_DEM_PLUGIN_ID), "advanced");
   });
 
   it("activates, registers its right panel, and opens it in the host application", () => {
     let panelRegistered = false;
-    let panelOptions: any = null;
+    let panelOptions: GeoLibreRightPanelRegistration | null = null;
     let unregisterCalled = false;
     let openRightPanelCalledWith: string | null = null;
     let closeRightPanelCalledWith: string | null = null;
@@ -58,7 +59,7 @@ describe("USGS DEM Downloader built-in plugin", () => {
         on: () => {},
         off: () => {},
       }),
-      registerRightPanel: (opts: any) => {
+      registerRightPanel: (opts: GeoLibreRightPanelRegistration) => {
         panelRegistered = true;
         panelOptions = opts;
         return () => {
@@ -95,10 +96,25 @@ describe("USGS DEM Downloader built-in plugin", () => {
   });
 
   it("supports updating localized labels dynamically", () => {
-    setUsgsDemLabels({
-      title: "Custom DEM Title",
-      search: "Find Elev",
-    });
-    // Setting labels should run without error
+    let panelOptions: GeoLibreRightPanelRegistration | null = null;
+    const mockApp = {
+      registerRightPanel: (opts: GeoLibreRightPanelRegistration) => {
+        panelOptions = opts;
+        return () => {};
+      },
+    } as unknown as GeoLibreAppAPI;
+    maplibreUsgsDemPlugin.activate(mockApp);
+    const container = document.createElement("div");
+    const cleanup = panelOptions?.render(container);
+    try {
+      setUsgsDemLabels({ title: "Custom DEM Title", search: "Find Elev" });
+      const title = panelOptions?.title;
+      assert.equal(typeof title === "function" ? title() : title, "Custom DEM Title");
+      assert.equal(container.querySelector("h3")?.textContent, "Custom DEM Title");
+    } finally {
+      setUsgsDemLabels(DEFAULT_USGS_DEM_LABELS);
+      if (typeof cleanup === "function") cleanup();
+      maplibreUsgsDemPlugin.deactivate?.(mockApp);
+    }
   });
 });

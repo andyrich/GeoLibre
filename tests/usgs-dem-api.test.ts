@@ -276,4 +276,22 @@ describe("footprintFeature & footprintCollection", () => {
     assert.equal(fc.type, "FeatureCollection");
     assert.equal(fc.features.length, 1);
   });
+
+  it("keeps items without bounds but draws no whole-world footprint for them", () => {
+    const raw = rawDemItem({ boundingBox: undefined });
+    const item = parseSearchResponse({ items: [raw] }).items[0];
+    assert.ok(item);
+    assert.equal(item.bbox, null);
+    assert.equal(footprintFeature(item), null);
+    assert.equal(footprintCollection([item]).features.length, 0);
+  });
+
+  it("derives a stable id from the download URL when the API gives none", () => {
+    const raw = rawDemItem({ sourceId: undefined, id: undefined, metaUrl: undefined });
+    const first = parseSearchResponse({ items: [raw] }).items[0];
+    const second = parseSearchResponse({ items: [raw] }).items[0];
+    assert.ok(first && second);
+    assert.equal(first.id, second.id);
+    assert.equal(first.id, first.downloadUrl);
+  });
 });

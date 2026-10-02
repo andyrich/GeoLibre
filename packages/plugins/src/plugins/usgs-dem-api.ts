@@ -110,8 +110,8 @@ export interface UsgsDemItem {
   publicationDate: string | null;
   lastUpdated: string | null;
   spatialReference: string | null;
-  /** Extent [west, south, east, north] in WGS84 degrees. */
-  bbox: [number, number, number, number];
+  /** Extent [west, south, east, north] in WGS84 degrees, or null when the API gave none. */
+  bbox: [number, number, number, number] | null;
   raw: unknown;
 }
 
@@ -186,7 +186,7 @@ export function extractRawDemName(title: string): string {
   if (!title) return "";
   let clean = title.trim();
   // Strip common USGS product prefixes and metadata suffixes
-  clean = clean.replace(/^USGS\s+(?:NED|3DEP|13\s+arc-second|1\s+arc-second|1m\s+)?/i, "");
+  clean = clean.replace(/^USGS\s+(?:NED|3DEP|1\/3\s+arc-second|1\s+arc-second|1m\s+)?/i, "");
   clean = clean.replace(/\s+(?:GeoTIFF|IMG|ArcGrid|1x1\s+degree|Shapefile).*$/i, "");
   // Normalize 1m DEM naming pattern like USGS_one_meter_x..._y...
   const match1m = clean.match(/x\d+y\d+/i);
@@ -318,11 +318,13 @@ export function parseSearchResponse(
     if (!entry || typeof entry !== "object") continue;
     const item = entry as Record<string, unknown>;
 
-    const sourceId = String(item.sourceId ?? item.id ?? item.metaUrl ?? Math.random());
+    const downloadUrl = String(item.downloadURL ?? item.downloadUrl ?? "");
+    if (!downloadUrl) continue;
+    // Fall back to the download URL so an id is stable across searches.
+    const sourceId = String(item.sourceId ?? item.id ?? item.metaUrl ?? downloadUrl);
     const title = String(item.title ?? "USGS DEM");
     const dataset = String(item.datasetName ?? item.dataset ?? "USGS DEM");
     const format = String(item.format ?? item.prodFormat ?? "GeoTIFF");
-    const downloadUrl = String(item.downloadURL ?? item.downloadUrl ?? "");
     const metaUrl = item.metaUrl ? String(item.metaUrl) : null;
     const previewUrl = item.previewUrl
       ? String(item.previewUrl)
@@ -337,13 +339,15 @@ export function parseSearchResponse(
     const spatialReference = item.spatialReference ? String(item.spatialReference) : null;
 
     // Bounds: API returns boundingBox: { minX, minY, maxX, maxY } or extent
-    let bbox: [number, number, number, number] = [-180, -90, 180, 90];
+    // Missing or non-numeric bounds stay unknown (null) rather than becoming a
+    // whole-world footprint.
+    let bbox: [number, number, number, number] | null = null;
     const boundingBox = item.boundingBox as Record<string, unknown> | undefined;
     if (boundingBox) {
-      const minX = Number(boundingBox.minX ?? boundingBox.west ?? -180);
-      const minY = Number(boundingBox.minY ?? boundingBox.south ?? -90);
-      const maxX = Number(boundingBox.maxX ?? boundingBox.east ?? 180);
-      const maxY = Number(boundingBox.maxY ?? boundingBox.north ?? 90);
+      const minX = Number(boundingBox.minX ?? boundingBox.west);
+      const minY = Number(boundingBox.minY ?? boundingBox.south);
+      const maxX = Number(boundingBox.maxX ?? boundingBox.east);
+      const maxY = Number(boundingBox.maxY ?? boundingBox.north);
       if (
         Number.isFinite(minX) &&
         Number.isFinite(minY) &&
@@ -353,8 +357,6 @@ export function parseSearchResponse(
         bbox = [minX, minY, maxX, maxY];
       }
     }
-
-    if (!downloadUrl) continue;
 
     normalizedItems.push({
       id: sourceId,
@@ -481,6 +483,7 @@ export async function get24kQuadGeometry(
 export function footprintFeature(
   item: UsgsDemItem,
 ): Feature<Polygon, UsgsDemFootprintProps> | null {
+  if (!item.bbox) return null;
   const [w, s, e, n] = item.bbox;
   if (!Number.isFinite(w) || !Number.isFinite(s) || !Number.isFinite(e) || !Number.isFinite(n)) {
     return null;

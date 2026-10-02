@@ -1,12 +1,11 @@
 /**
- * USGS 3DEP Elevation / DEM Explorer plugin (Plugins > Web Services > USGS DEM Downloader).
+ * USGS 3DEP Elevation / DEM Explorer plugin (Plugins > Web Services > USGS 3DEP).
  *
  * Allows users to search, visualize footprints, download, and load digital elevation
  * models (1m DEM, 1/3 arc-second, 1 arc-second, Alaska 5m, etc.) directly from
  * USGS The National Map API services onto the GeoLibre display.
  */
 
-import { useAppStore } from "@geolibre/core";
 import type { Feature, FeatureCollection, MultiPolygon, Polygon } from "geojson";
 import type {
   GeoJSONSource,
@@ -82,10 +81,16 @@ export interface UsgsDemLabels {
   filterRedundant: string;
   footprintsLayer: string;
   exportGeoJson: string;
+  errorNoBounds: string;
+  errorNoDrawnBox: string;
+  errorInvalidCoords: string;
+  errorQuadInputs: string;
+  errorQuadNotFound: (quad: string, state: string) => string;
+  loadError: (message: string) => string;
 }
 
 export const DEFAULT_USGS_DEM_LABELS: UsgsDemLabels = {
-  title: "USGS DEM Downloader",
+  title: "USGS 3DEP",
   hint: "Query and load USGS 3DEP Digital Elevation Models onto the map.",
   search: "Search DEMs",
   searching: "Searching USGS API...",
@@ -114,8 +119,14 @@ export const DEFAULT_USGS_DEM_LABELS: UsgsDemLabels = {
   datasets: "Elevation Datasets",
   format: "Format",
   filterRedundant: "Exclude redundant partial tiles",
-  footprintsLayer: "USGS DEM Footprints",
-  exportGeoJson: "Export Footprints (GeoJSON)",
+  footprintsLayer: "USGS 3DEP Footprints",
+  exportGeoJson: "Export GeoJSON",
+  errorNoBounds: "Could not determine current map bounds.",
+  errorNoDrawnBox: "Please draw a bounding box on the map first.",
+  errorInvalidCoords: "Please enter valid numeric coordinates for West, South, East, and North.",
+  errorQuadInputs: "Please enter both Quad Name and State.",
+  errorQuadNotFound: (quad, state) => `Could not find 24K Topo Quad '${quad}' in state '${state}'.`,
+  loadError: (msg) => `Failed to load DEM: ${msg}`,
 };
 
 let currentLabels: UsgsDemLabels = { ...DEFAULT_USGS_DEM_LABELS };
@@ -265,15 +276,17 @@ function updateFootprintSource(
   ensureFootprintLayers(map);
   const source = map.getSource(FOOTPRINT_SOURCE_ID) as GeoJSONSource | undefined;
   if (source) {
-    source.setData(fc as any);
+    void source.setData(fc);
   }
 
-  if (!footprintsRegistered && appRef?.registerExternalNativeLayer && fc.features.length > 0) {
+  // Re-register on every non-empty search so the store layer's geojson tracks
+  // the current result set (the Layers panel, attribute table, and exports read it).
+  if (appRef?.registerExternalNativeLayer && fc.features.length > 0) {
     footprintsRegistered = true;
     appRef.registerExternalNativeLayer({
       id: FOOTPRINT_STORE_LAYER_ID,
       name: currentLabels.footprintsLayer,
-      type: "vector",
+      type: "geojson",
       geojson: fc as FeatureCollection,
       nativeLayerIds: [FOOTPRINT_FILL_LAYER_ID, FOOTPRINT_LINE_LAYER_ID],
       sourceIds: [FOOTPRINT_SOURCE_ID],
@@ -287,12 +300,12 @@ function setSelectedFootprint(map: MapLibreMap, item: UsgsDemItem | null): void 
   const source = map.getSource(SELECT_SOURCE_ID) as GeoJSONSource | undefined;
   if (!source) return;
   if (!item) {
-    source.setData(emptyFeatureCollection());
+    void source.setData(emptyFeatureCollection());
     return;
   }
   const feat = footprintFeature(item);
-  source.setData(
-    feat ? { type: "FeatureCollection", features: [feat as any] } : emptyFeatureCollection(),
+  void source.setData(
+    feat ? { type: "FeatureCollection", features: [feat] } : emptyFeatureCollection(),
   );
 }
 
@@ -339,6 +352,10 @@ function mountPanel(container: HTMLElement): () => void {
   let isLoading = false;
   let selectedId: string | null = null;
   let activeAddId: string | null = null;
+  // Set when this panel instance is torn down (a label change remounts it), so
+  // an in-flight search neither paints stale footprints nor writes to detached DOM.
+  let disposed = false;
+  let searchAbort: AbortController | null = null;
 
   // Selected datasets
   const selectedDatasets = new Set<string>([
@@ -479,9 +496,9 @@ function mountPanel(container: HTMLElement): () => void {
     const opt = document.createElement("option");
     opt.value = fmt;
     opt.textContent = fmt;
+    opt.selected = fmt === selectedFormat;
     formatSelect.appendChild(opt);
   });
-  formatSelect.value = selectedFormat;
   formatSelect.onchange = () => {
     selectedFormat = formatSelect.value;
   };
@@ -519,7 +536,7 @@ function mountPanel(container: HTMLElement): () => void {
   exportBtn.type = "button";
   exportBtn.style.cssText =
     "padding:2px 6px;border-radius:4px;border:1px solid hsl(var(--border));background:transparent;font-size:10px;cursor:pointer;display:none;";
-  exportBtn.textContent = "Export GeoJSON";
+  exportBtn.textContent = currentLabels.exportGeoJson;
   exportBtn.onclick = () => exportFootprintsAsGeoJson(results);
   resultHeader.appendChild(resultStatus);
   resultHeader.appendChild(exportBtn);
@@ -599,7 +616,7 @@ function mountPanel(container: HTMLElement): () => void {
     const src = map.getSource(DRAW_SOURCE_ID) as GeoJSONSource | undefined;
     if (!src) return;
     if (!box) {
-      src.setData(emptyFeatureCollection());
+      void src.setData(emptyFeatureCollection());
       return;
     }
     const [w, s, e, n] = box;
@@ -619,13 +636,13 @@ function mountPanel(container: HTMLElement): () => void {
         ],
       },
     };
-    src.setData({ type: "FeatureCollection", features: [feat] });
+    void src.setData({ type: "FeatureCollection", features: [feat] });
   }
 
   function startDrawing() {
     isDrawing = true;
     drawBtn.textContent = currentLabels.drawCancel;
-    drawStatus.textContent = "Click and drag to define a search box on the map.";
+    drawStatus.textContent = currentLabels.drawHint;
     const map = appRef?.getMap?.();
     if (map) {
       map.getCanvas().style.cursor = "crosshair";
@@ -637,10 +654,12 @@ function mountPanel(container: HTMLElement): () => void {
 
   function stopDrawing() {
     isDrawing = false;
+    drawStart = null;
     drawBtn.textContent = currentLabels.drawStart;
     const map = appRef?.getMap?.();
     if (map) {
       map.getCanvas().style.cursor = "";
+      map.dragPan.enable();
       map.off("mousedown", onMapMouseDown);
       map.off("mousemove", onMapMouseMove);
       map.off("mouseup", onMapMouseUp);
@@ -671,6 +690,8 @@ function mountPanel(container: HTMLElement): () => void {
   async function performSearch() {
     if (isLoading) return;
     isLoading = true;
+    const abort = new AbortController();
+    searchAbort = abort;
     searchBtn.disabled = true;
     searchBtn.textContent = currentLabels.searching;
     resultStatus.textContent = currentLabels.searching;
@@ -681,11 +702,11 @@ function mountPanel(container: HTMLElement): () => void {
 
       if (mode === "view") {
         const b = currentBbox();
-        if (!b) throw new Error("Could not determine current map bounds.");
+        if (!b) throw new Error(currentLabels.errorNoBounds);
         queryBbox = b;
       } else if (mode === "draw") {
         if (!drawnBbox) {
-          throw new Error("Please draw a bounding box on the map first.");
+          throw new Error(currentLabels.errorNoDrawnBox);
         }
         queryBbox = drawnBbox;
       } else if (mode === "bbox") {
@@ -699,20 +720,19 @@ function mountPanel(container: HTMLElement): () => void {
           !Number.isFinite(e) ||
           !Number.isFinite(n)
         ) {
-          throw new Error(
-            "Please enter valid numeric coordinates for West, South, East, and North.",
-          );
+          throw new Error(currentLabels.errorInvalidCoords);
         }
         queryBbox = [w, s, e, n];
       } else if (mode === "quad") {
         const qName = quadIn.input.value.trim();
         const sName = stateIn.input.value.trim();
         if (!qName || !sName) {
-          throw new Error("Please enter both Quad Name and State.");
+          throw new Error(currentLabels.errorQuadInputs);
         }
         const quadGeom = await get24kQuadGeometry(qName, sName);
+        if (disposed) return;
         if (!quadGeom) {
-          throw new Error(`Could not find 24K Topo Quad '${qName}' in state '${sName}'.`);
+          throw new Error(currentLabels.errorQuadNotFound(qName, sName));
         }
         queryBbox = quadGeom.bbox;
         const map = appRef?.getMap?.();
@@ -736,7 +756,9 @@ function mountPanel(container: HTMLElement): () => void {
         prodFormats,
         max: 100,
         filterRedundant,
+        signal: abort.signal,
       });
+      if (disposed) return;
 
       results = res.items;
       totalFound = res.total;
@@ -748,9 +770,12 @@ function mountPanel(container: HTMLElement): () => void {
       }
 
       renderResults();
-    } catch (err: any) {
-      resultStatus.textContent = currentLabels.searchError(err.message || String(err));
+    } catch (err) {
+      if (disposed) return;
+      const message = err instanceof Error ? err.message : String(err);
+      resultStatus.textContent = currentLabels.searchError(message);
     } finally {
+      if (searchAbort === abort) searchAbort = null;
       isLoading = false;
       searchBtn.disabled = false;
       searchBtn.textContent = currentLabels.search;
@@ -815,11 +840,15 @@ function mountPanel(container: HTMLElement): () => void {
       addBtn.style.cssText =
         "padding:3px 8px;border-radius:4px;border:none;background:hsl(var(--primary));color:hsl(var(--primary-foreground));font-size:11px;font-weight:500;cursor:pointer;";
       const isAddingThis = activeAddId === item.id;
+      // Only HTTP(S) GeoTIFFs can stream onto the map; other formats (IMG) are
+      // download-only.
+      const canLoad = HTTP_URL_RE.test(item.downloadUrl) && /tiff?$/i.test(item.format);
       addBtn.textContent = isAddingThis ? currentLabels.adding : currentLabels.add;
-      addBtn.disabled = isAddingThis;
+      addBtn.disabled = isAddingThis || !canLoad;
+      if (!canLoad) addBtn.style.opacity = "0.5";
 
       addBtn.onclick = async () => {
-        if (!appRef) return;
+        if (!appRef || !canLoad) return;
         activeAddId = item.id;
         addBtn.disabled = true;
         addBtn.textContent = currentLabels.adding;
@@ -830,9 +859,10 @@ function mountPanel(container: HTMLElement): () => void {
             const { addRasterToMap } = await import("./maplibre-raster");
             await addRasterToMap(appRef, item.downloadUrl, { name: item.title });
           }
-        } catch (err: any) {
+        } catch (err) {
           console.error("Failed to add USGS DEM layer:", err);
-          alert(`Failed to load DEM: ${err.message || String(err)}`);
+          const message = err instanceof Error ? err.message : String(err);
+          resultStatus.textContent = currentLabels.loadError(message);
         } finally {
           activeAddId = null;
           addBtn.disabled = false;
@@ -878,7 +908,9 @@ function mountPanel(container: HTMLElement): () => void {
   setMode("view");
 
   return () => {
-    stopDrawing();
+    disposed = true;
+    searchAbort?.abort();
+    if (isDrawing) stopDrawing();
     onFootprintSelect = null;
   };
 }
@@ -926,10 +958,8 @@ function onMapMouseLeave(e: MapLayerMouseEvent): void {
  */
 export const maplibreUsgsDemPlugin: GeoLibrePlugin = {
   id: USGS_DEM_PLUGIN_ID,
-  name: "USGS DEM Downloader",
+  name: "USGS 3DEP",
   version: "1.0.0",
-  description: "Explore, download, and load USGS 3DEP Digital Elevation Models onto the map.",
-  author: "GeoLibre",
 
   activate(app: GeoLibreAppAPI) {
     appRef = app;
